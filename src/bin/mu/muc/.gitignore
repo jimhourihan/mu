@@ -1,0 +1,8 @@
+.gdb_history
+mu-interp
+mu-interp.opt
+muc
+muc.opt
+/*.muc
+x.mu
+/*.mud

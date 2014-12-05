@@ -1,0 +1,15 @@
+#!/bin/csh -f
+
+set MP = ${SRC_ROOT}/bin/languages/mu-interp/test
+
+if ($?MU_MODULE_PATH) then
+    setenv MU_MODULE_PATH ${MP}:${MU_MODULE_PATH}
+else
+    setenv MU_MODULE_PATH ${MP}
+endif
+
+if ($?BUILD_ROOT) then
+    setenv MU_MODULE_PATH ${MU_MODULE_PATH}:${BUILD_ROOT}/plugins/mu
+endif
+
+exec run $*

@@ -1,0 +1,36 @@
+
+ This is the Mu extension language. The project was started in the early
+ 90s and has been reworked a number of times. The syntax was overhauled in
+ 2001. Its primary purpose has been as an extension language for larger
+ applications written in C++.
+
+ If you're looking for an example of how to write a language you're
+ probably better off looking elsewhere.
+
+ Mu is still in use (at VFX studios as one of RV's extension languages
+ (along with python). Other apps which have used it:
+
+    * RV     -- review tool (tweaksoftware.com)
+    * C4     -- particle, rigid body, fluids package (tweakfilms). 
+    * crack  -- procedural geometry shattering, cracking (tweakfilms)
+    * procedural geometry plugins for prman, entropy, and gelato (tweakfilms)
+
+ Interesting features:
+
+    * BSD license
+    * Full compile time type checking
+    * local type inference
+    * Partial application and partial evaluation
+    * Sum, product, record, and OO-class types
+    * "Varying" data types for use as CPU shading language
+    * Python like namespaces and module system
+    * Qt bindings generated from Qt html docs
+    * Primitive and reference types (Java-like)
+    * Primitive unicode support
+
+ Badness:
+
+    * Lots of ancient to old C++ -- (all the way back to cfront)
+    * nil
+    * C++-like OO syntax is bolted on
+

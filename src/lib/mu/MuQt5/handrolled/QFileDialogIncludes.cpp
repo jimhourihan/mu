@@ -1,0 +1,1 @@
+#include <MuQt/QDirType.h>

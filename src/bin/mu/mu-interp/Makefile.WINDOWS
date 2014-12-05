@@ -1,0 +1,22 @@
+#  -*- mode: makefile -*-
+#
+#  Copyright (C) 2001  Tweak Films
+#  All Rights Reserved.
+#
+
+PROJECT	     = mu-interp
+TYPE	     = EXECUTABLE_WITH_PLUGINS
+
+CXXFILES     = main
+LIBS_DARWIN  = readline System mx dl pthread
+LIBS_LINUX   = readline ncurses dl pthread
+LIBS_WINDOWS = pcre win_pthreads win_posix
+LIBS	     = MuIO MuSystem MuAutoDoc MuImage tiff jpeg z MuLang Mu stl_ext arg gc
+
+CXXFLAGS    += -DLINKED_MODULES
+#MODULES      = mu_system mu_autodoc mu_image mu_io mu_test
+
+include $(SRC_ROOT)/build/Makefile.master
+
+run_runall:
+	time ./runall

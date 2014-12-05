@@ -1,0 +1,39 @@
+#+TITLE:     Qt 5.1 Port
+#+AUTHOR:    Jim Hourihan
+#+EMAIL:     jimh@tweaksoftware.com
+#+DATE:      2013-06-23 Sun
+#+OPTIONS:   ^:{} H:0 num:t toc:nil \n:nil @:t ::t |:t ^:{} -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil tags:not-in-toc
+#+COLUMNS:   %75ITEM(Task) %6Effort(Est){:} %6CLOCKSUM(Clock)
+
+* HACKS
+** QMargins couldn't link operator+= and operator-=
+** added QtCore into include path for QtSensor header files
+
+* TASKS
+** TODO QFileDevice implement permissions() function manually or fix
+    It returns QFileDevice::Permissions template type -- need to have
+    it return int or something translatable.
+
+
+* GENERAL ISSUES
+** QMethod could be wrapped now 
+
+* Qt 5.1 BUGS
+** QtCore QMargins is missing implementation of operators += and -=
+** link messages for RVX 
+    ld: warning: direct access in QFormInternal::QAbstractFormBuilder::saveItemViewExtraInfo(QAbstractItemView const*, QFormInternal::DomWidget*, QFormInternal::DomWidget*) to global weak symbol QStringList::~QStringList() means the weak symbol cannot be overridden at runtime. This was likely caused by different translation units being compiled with different visibility settings.
+    ld: warning: direct access in QFormInternal::QAbstractFormBuilder::saveItemViewExtraInfo(QAbstractItemView const*, QFormInternal::DomWidget*, QFormInternal::DomWidget*) to global weak symbol QStringList::~QStringList() means the weak symbol cannot be overridden at runtime. This was likely caused by different translation units being compiled with different visibility settings.
+    ld: warning: direct access in QFormInternal::QAbstractFormBuilder::loadItemViewExtraInfo(QFormInternal::DomWidget*, QAbstractItemView*, QWidget*) to global weak symbol QStringList::~QStringList() means the weak symbol cannot be overridden at runtime. This was likely caused by different translation units being compiled with different visibility settings.
+    ld: warning: direct access in QFormInternal::QAbstractFormBuilder::loadItemViewExtraInfo(QFormInternal::DomWidget*, QAbstractItemView*, QWidget*) to global weak symbol QStringList::~QStringList() means the weak symbol cannot be overridden at runtime. This was likely caused by different translation units being compiled with different visibility settings.
+** runtime messages in doc_browserb
+    A backend with type "QAccelerometer" and identifier "dummy.accelerometer" has already been registered! 
+    A backend with type "QAmbientLightSensor" and identifier "dummy.lightsensor" has already been registered! 
+    objc[57894]: Class QNSListener is implemented in both /Volumes/mash/Qt/5.1.0-rc1/clang_64/plugins/bearer/libqcorewlanbearer.dylib and /Volumes/mash/Qt/5.1.0-rc1/clang_64/plugins/bearer/libqcorewlanbearer_debug.dylib. One of the two will be used. Which one is undefined.
+** qsensorgesture.h
+*** includes files like <QObject> instead of qualified <QtCore/QObject>
+     In file included from /Volumes/mash/Qt/5.1.0-rc1/clang_64/include/QtWebKitWidgets/QtWebKitWidgets:3:
+     In file included from /Volumes/mash/Qt/5.1.0-rc1/clang_64/include/QtWebKitWidgets/QtWebKitWidgetsDepends:4:
+     In file included from /Volumes/mash/Qt/5.1.0-rc1/clang_64/include/QtSensors/QtSensors:25:
+     /Volumes/mash/Qt/5.1.0-rc1/clang_64/include/QtSensors/qsensorgesture.h:45:10: fatal error: 'QObject' file not found
+     #include <QObject>

@@ -1,0 +1,9 @@
+2006-04-07  Jim Hourihan  <jimh@tweakfilms.com>
+
+	* IOModule.cpp: GC changes on all files.
+
+2006-01-04  Jim Hourihan  <jimh@tweakfilms.com>
+
+	* IOModule.cpp: no longer uses string streams when compiled with
+	2.95 (since it doesn't support them).
+

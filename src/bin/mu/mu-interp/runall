@@ -1,0 +1,20 @@
+#!/bin/csh -f
+
+set MP = ${SRC_ROOT}/bin/mu/mu-interp/test
+
+if ($?MU_MODULE_PATH) then
+    setenv MU_MODULE_PATH ${MP}:${MU_MODULE_PATH}
+else
+    setenv MU_MODULE_PATH $MP
+endif
+
+if ($?BUILD_ROOT) then
+    setenv MU_MODULE_PATH ${MU_MODULE_PATH}:${BUILD_ROOT}/plugins/mu
+endif
+
+foreach file (test/*.mu)
+    if ($file != "test/benchmark.mu") then
+	echo RUNNING: $file
+	$BUILD_ROOT/bin/mu-interp -debug -main $file | grep "ERR|failed|>>>"
+    endif
+end
