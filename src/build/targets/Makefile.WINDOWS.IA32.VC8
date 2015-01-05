@@ -1,0 +1,287 @@
+#  -*- mode: makefile -*-
+#
+#  Copyright (c) 2001, Tweak Films
+#  Copyright (c) 2008, Tweak Software
+# 
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions
+#  are met:
+#
+#     * Redistributions of source code must retain the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer.
+#
+#     * Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials
+#       provided with the distribution.
+#
+#     * Neither the name of the Tweak Software nor the names of its
+#       contributors may be used to endorse or promote products
+#       derived from this software without specific prior written
+#       permission.
+# 
+#  THIS SOFTWARE IS PROVIDED BY Tweak Software ''AS IS'' AND ANY EXPRESS
+#  OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+#  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED. IN NO EVENT SHALL Tweak Software BE LIABLE FOR
+#  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+#  OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+#  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+#  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+#  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+#  DAMAGE.
+#
+#
+#  This file works with MS VC8. There are some funny things in here to get
+#  around issues with cl.exe:
+#
+#  _int64 == __int64
+#
+#	The MS compiler has a type called __int64 which works
+#	fine. However, it appears that the compiler aliases the token
+#	_int64 to __int64 as well. This is not represented in their
+#	documentation. The define gets around this problem.
+#
+#   We'll use -FOO instead of /FOO any place we're allowed to in this
+#   Makefile
+#
+#   Some LPATH and IPATH variables are picked up by the compiler/linker 
+#   via the env variables LIBS and IPATH. 
+#
+#   Here's what's in my .cshrc (cygwin):
+#
+# setenv INCLUDE "C:\Program Files\Microsoft Visual Studio 8\VC\ATLMFC\INCLUDE;C:\Program Files\Microsoft Visual Studio 8\VC\INCLUDE;C:\Program Files\Microsoft Visual Studio 8\VC\PlatformSDK\include;C:\Program Files\Microsoft Visual Studio 8\SDK\v2.0\include;C:\Program Files\Microsoft DirectX SDK (August 2007)\Include; %INCLUDE%"
+# setenv LIB "C:\Program Files\Microsoft Visual Studio 8\VC\ATLMFC\LIB;C:\Program Files\Microsoft Visual Studio 8\VC\LIB;C:\Program Files\Microsoft Visual Studio 8\VC\PlatformSDK\lib;C:\Program Files\Microsoft Visual Studio 8\SDK\v2.0\lib;C:\Program Files\Microsoft DirectX SDK (August 2007)\Lib/x86;%LIB%"
+#
+#
+#   Not needed, but frequently used by code: Platform SDK and Direct X SDK
+#
+#
+
+PLATFORM     = WINDOWS
+ARCH         = IA32
+PROCESSOR    = i386
+COMPILER     = VC8
+
+ifndef NOSWITCHES
+SWITCHES    ?= -DTWK_NO_SGI_BYTE_ORDER \
+               -DTWK_LITTLE_ENDIAN \
+               -D__LITTLE_ENDIAN__ \
+               -DTWK_NO_STD_MIN_MAX \
+               -D_M_IX86=600 \
+               -D_MSC_VER=1400 \
+               -D_WINDOWS \
+               -DPCRE_STATIC \
+               -DOPJ_STATIC \
+	       -DWIN32=1 \
+	       -D_WIN32=1 \
+               -DGC_NOT_DLL \
+               -DTWK_USE_GLEW \
+	       -DIMPORT_GL32 \
+               -J \
+	       -D_CRT_SECURE_NO_DEPRECATE=1 \
+	       -DNOMINMAX
+
+#               -DGL_GLEXT_PROTOTYPES \
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#               -DPTW32_STATIC_LIB \
+#	       -DUNICODE=1 
+#	       -D_UNICODE 
+#		-D_POSIX_
+endif
+
+UNAME        = win32
+
+
+# not working for some reason
+pathconvert  = $(subst /cygdrive/c,C:,$(1))
+
+#
+#   we need the full path to link.exe because of the "link" unix command
+#   in cygwin's bin directory. 
+#
+#   -MD	    dynamic runtime opt
+#   -MDd    dynamic runtime debug
+#   -MT	    static runtime opt
+#   -MTd    static runtime debug
+#
+#   -RTC1   enable runtime error checking
+#   -Wp64   detect 64 porting issues
+#   -Zi     put debug in .pdb file
+#
+#   -D_DEBUG	will cause dependancies on debug specific functions in
+#		the runtime lib
+#-DNDEBUG
+DEBUGFLAGS   = -GR -MDd -Zi 
+OPTFLAGS     = $(DEBUGFLAGS)
+CC           = cl -EHsc -fp:precise -nologo -D__STDC__
+CXX          = cl -EHsc -Zc:forScope -fp:precise -nologo
+AR           = lib
+CXX_LD	     = "/cygdrive/c/Program Files/Microsoft Visual Studio 8/VC/bin/link"
+
+#
+#   This script runs GCC piped through sed to change some of the file paths
+#   and names. We need to use GCC with cygwin for the build system to
+#   work. The file product however will have no cygwin depedancies and will
+#   have been completely compiled by cl.exe, liked with link.exe, etc
+#
+CC_MD        = makeDependCL -nosys
+CXX_MD       = $(CC_MD)
+
+#
+#   Change the extensions and prefix. The LIBPREFIX needs to be defined as
+#   nothing. The default is lib (as in libfoo.a). On windows we want
+#   foo.lib. .DLL replaces .so, .obj replaces .o, .lib replaces .a.
+#
+SOSUFFIX     = .dll
+OBJSUFFIX    = .obj
+ARSUFFIX     = .lib
+LIBPREFIX    = 
+BINSUFFIX    = .exe
+PLUGINSUFFIX = .dll
+
+#
+#  Default VC include path needs to passed to gcc for dependancies
+#
+#  C:\Program Files\Microsoft Visual Studio 8\VC\ATLMFC\INCLUDE
+#  C:\Program Files\Microsoft Visual Studio 8\VC\INCLUDE
+#  C:\Program Files\Microsoft Visual Studio 8\VC\PlatformSDK\include
+#  C:\Program Files\Microsoft Visual Studio 8\SDK\v2.0\include
+#
+#
+
+#VC_DIR       = /cygdrive/c/Program_Files/Microsoft_Visual_Studio_8/
+#VC_INCLUDES  = $(addprefix $(VC_DIR),VC/ATLMFC/INCLUDE VC/INCLUDE VC/PlatformSDK/include SDK/v2.0/include)
+
+#
+#  Deal with the OPTFLAGS in the CXX_OBJ_RULE rule. Since we're using GCC
+#  to do the dependancies, we need these seperate.
+#
+
+CXXFLAGS    += $(SWITCHES)
+CFLAGS      += $(SWITCHES)
+SHAREFLAGS   =
+DYNPUBLIC    = 
+LIBTOOL      = libtool
+YACC         = bison
+LEX          = flex
+DEPFLAGS     = -E
+LDFLAGS     += -NOLOGO -LARGEADDRESSAWARE -DEBUG -PDB:$(obj_dir)/$(notdir $(basename $@)).pdb
+
+#
+#  QT
+#  --
+#
+#  The QT variable indicates its include and lib should be
+#  automatically added to the compile and link lines.
+#
+#  We need to select the right Qt libs based on whether we're using
+#  debug DLLs or release DLLs. This nastiness figures that out by
+#  searching the OPTFLAGS variable to figure out what kind of code is
+#  being generated.
+#
+
+QT = /cygdrive/c/Qt/4.5.0
+QTDIR = $(QT)
+
+ifneq (,$(findstring -MDd,$(OPTFLAGS)))
+QTLIBS = QtWebKitd4 QtOpenGLd4 QtNetworkd4 QtCored4 QtGuid4 QtSvgd4
+else
+QTLIBS = QtWebKit4 QtOpenGL4 QtNetwork4 QtCore4 QtGui4 QtSvg4
+endif
+
+#
+#  QUICKTIME
+#  ---------
+#
+#  Only include the Quicktime path is absolutely necessary
+#
+#  The build system hates spaces in paths. But because Make is lazy,
+#  you can encode them using subst as long as nothing expands the
+#  variable in a rule before its actually used. CXXFLAGS and CFLAGS
+#  fall into that catagory. So we'll dump the Quicktime include paths
+#  in here.
+#
+#  For whatever reason, its necessary to add -NODEFAULTLIB:libcmt if 
+#  we're using Quicktime when linking against multithreaded DLL runtime.
+#  I'm sure this will come back to bite me.
+#
+
+ifeq ($(findstring MovieQT,$(LIBS) $(LIBS_WINDOWS_IA32)),MovieQT)
+CXXFLAGS    += $(subst +, ,"-I/cygdrive/c/Program+Files/Quicktime+SDK/CIncludes")
+CFLAGS      += $(subst +, ,"-I/cygdrive/c/Program+Files/Quicktime+SDK/CIncludes")
+LDFLAGS     += -NODEFAULTLIB:libcmt $(subst +, ,"-LIBPATH:/cygdrive/c/Program+Files/Quicktime+SDK/Libraries")
+endif
+
+#
+#   The VC compiler doesn't use the -lfoo method of locating libraries.
+#   Each library must be specifically a .lib or a .dll. So this section
+#   finds the corresponding lib or dll for each of the LIBS in $BUILD_ROOT/lib
+#   This will bust terribly if a .lib and a .dll with the same name are in 
+#   there.
+#
+
+plibs = $(patsubst -l%,%,$(libs))
+flibs = $(addsuffix .lib,$(plibs))
+wlibs = $(addsuffix .lib,$(WINLIBS))
+
+#
+#   Since this is a very non-gcc platform, we have to override the rules
+#   for object, library, and linking. Much of the nastiness is caused by
+#   conversion of cygwin paths to windows C: paths.
+#
+
+LOADPATH_SWITCH = -LIBPATH:
+CXX_MD_RULE     = $(subst /cygdrive/c,C:,$(CXX_MD) $< $@ -nologo $(CXXFLAGS))
+CC_MD_RULE      = $(subst /cygdrive/c,C:,$(CC_MD) $< $@ -nologo $(CFLAGS))
+CC_OBJ_RULE     = $(subst /cygdrive/c,C:,$(CC) $(OPTFLAGS) $(archflags) $(CFLAGS) -c -Fd$(basename $@).pdb -FR$(obj_dir) -Fo$@ $<)
+CXX_OBJ_RULE    = $(subst /cygdrive/c,C:,$(CXX) $(OPTFLAGS) $(archflags) $(CXXFLAGS) -c -Fd$(basename $@).pdb -FR$(obj_dir)  -Fo$@ $<)
+AR_RULE         = $(AR) -nologo -out:$(subst /cygdrive/c,C:,$@) \
+		  $(subst /cygdrive/c,C:,$(filter %$(OBJSUFFIX),$^))
+CXX_LINK_RULE   = $(subst /cygdrive/c,C:,$(CXX_LD) $(archflags) $(LDFLAGS) $(objs) -OUT:$@ $(flibs) $(wlibs))
+SO_LINK_RULE    = $(subst /cygdrive/c,C:,$(CXX_LD) -MANIFEST -MAP:$(basename $@).map $(archflags) $(LDFLAGS) $(objs) -OUT:$@ $(flibs) $(wlibs)) 
+PLUGIN_LINK_RULE = $(SO_LINK_RULE)
+RC_RULE		 = $(RC) -fo $(subst /cygdrive/c,C:,$@) $< 
+
+#
+#   This will be very installation specific. These are the 3rd party libs
+#   which are normally "system installed" on UNIX. We have to include
+#   individual include and library paths to pick these up.
+#
+
+WINLIBS     += Ws2_32 kernel32 user32 gdi32 winspool comdlg32 advapi32 \
+               shell32 ole32 oleaut32 uuid odbc32 odbccp32 
+
+LIBS3        = portaudio 
+
+IPATH	    += $(STAGE)/include \
+               $(SRC_ROOT)/pub/win_pthreads \
+	       $(SRC_ROOT)/pub/win_posix \
+	       $(SRC_ROOT)/pub/pcre \
+	       $(SRC_ROOT)/pub/winGL 
+LPATH       += $(STAGE)/lib
+
+SYSTEM_LIBS += atomic GraphicsMagick libquicktime
+SHARED       = -DLL
+DYNAMIC      = 
+DEPOUTPUT    = >
+INSTALL      = install -p -m ug=r
+LD_DYNAMIC   = 
+LD_STATIC    = 
+LD_LOADALL   =  
+LD_NOLOADALL = 
+NEVERDYNAMIC = pthread
+
+#
+#   This would be standard cygwin stuff
+#
+DEBUGGER     = 
+MAKEINFO     = makeinfo
+MAKEHTML     = texi2html -split section
+MAKEPDF      = pdftex
+ASCIIDOC     = $(SRC_ROOT)/python/asciidoc/asciidoc.py
+PDFTEXT      = echo

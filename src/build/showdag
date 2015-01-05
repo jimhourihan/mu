@@ -1,0 +1,165 @@
+#!/usr/bin/env python
+#
+#  Copyright (c) 2001, Tweak Films
+#  Copyright (c) 2008, Tweak Software
+# 
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions
+#  are met:
+#
+#     * Redistributions of source code must retain the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer.
+#
+#     * Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials
+#       provided with the distribution.
+#
+#     * Neither the name of the Tweak Software nor the names of its
+#       contributors may be used to endorse or promote products
+#       derived from this software without specific prior written
+#       permission.
+# 
+#  THIS SOFTWARE IS PROVIDED BY Tweak Software ''AS IS'' AND ANY EXPRESS
+#  OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+#  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED. IN NO EVENT SHALL Tweak Software BE LIABLE FOR
+#  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+#  OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+#  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+#  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+#  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+#  DAMAGE.
+#
+
+import os
+import sys
+
+
+import string
+import tempfile
+
+sed = """-e 's/^\(%%BoundingBox:\) \([0-9]*\) \([0-9]*\) \([0-9]*\) \([0-9]*\)$/\\1 \\3 \\2 \\5 \\4/' \\
+-e 's/^\(%%PageBoundingBox:\) \([0-9]*\) \([0-9]*\) \([0-9]*\) \([0-9]*\)$/\\1 \\3 \\2 \\5 \\4/' \\
+-e '/[0-9]* [0-9]* [0-9]* [0-9]* boxprim clip newpath/{
+N
+s/\([0-9]*\) \([0-9]*\) \([0-9]*\) \([0-9]*\) boxprim clip newpath\\n\([0-9]*\) \([0-9]*\) translate/\\2 \\1 \\4 \\3 boxprim clip newpath\\
+\\2 \\4 add \\5 translate 90 rotate/
+}' -e '/^0 0 translate 0 rotate$/d'"""
+
+prog = os.path.basename( sys.argv.pop(0) )
+
+showps = "gv"
+psArgs = "-scale=-1003 -resize -antialias -geometry x512"
+
+def printArgs():
+    print """
+Usage:
+    %s [<options>]
+
+Options:
+    -page=w,h         Set the page to be width x height (in inches)
+                      Default is 8.5,11
+    -landscape        Display the dag in landscape mode
+    -font=<fontname>  Set the node font to be <fontname>
+                      Default is Helvetica
+    -fill             Make the dag fill the page
+    -dot=<filename>   Specify a .dot file to use.
+""" % prog
+    sys.exit(1)
+
+
+#
+# Process the args for 'dot'
+#
+
+dotArgs = { '-Gpage' : '8.5,11',
+    	    '-Nfontname' : 'Helvetica',
+	    '-Gcenter' : 'true',
+	    '-Grank' : 'same',
+	    '-Gmargin' : '0.25' }
+
+landscape = 0
+dotFile = None
+dag2dotArgs = []
+
+while sys.argv:
+    arg = sys.argv.pop()
+
+    if arg[:6] == '-page=':
+    	dotArgs['-Gpage'] = arg[6:]
+
+    elif arg[:5] == '-dot=':
+    	dotFile = arg[5:]
+
+    elif arg[:6] == '-font=':
+    	dotArgs['-Nfontname'] = arg[6:]
+
+    elif arg == '-landscape':
+	landscape = 1
+
+    elif arg == '-fill':
+	dotArgs['-Gratio'] = 'fill'
+
+    else:
+        if len(sys.argv)>1 :
+            print '*** Unrecognize options', sys.argv
+            printArgs()
+        else:
+            dag2dotArgs.append(arg)
+
+#
+# Set the bounding box size to be just within the page size
+#
+w,h = string.split( dotArgs['-Gpage'], ',' )
+
+#
+# Rotate the page settings to make landscape work
+#
+if landscape:
+    w,h = h,w
+    dotArgs['-Gpage'] = "%s,%s" % ( w, h )
+
+#
+dotArgs['-Gsize'] = "%3.2f,%3.2f" % ( float(w)-0.5, float(h)-0.5 )
+
+dotArgs = string.joinfields( map( lambda x, y: "%s=%s" % ( x, y ),
+    	    	    	    	  dotArgs.keys(), dotArgs.values() ) ) + ' -Tps'
+
+psFile = tempfile.mktemp()
+
+if dotFile and os.path.exists( dotFile ):
+    print 'Using .dot file', dotFile
+    dotFile = 'cat %s' % dotFile
+else:
+    dotFile = '$SRC_ROOT/build/dag2dot %s' % string.join(dag2dotArgs)
+
+if os.environ.has_key("DOT_EXE"):
+    dotExe = os.environ["DOT_EXE"]
+else:
+    dotExe = 'dot'
+
+if landscape:
+    cmd = "%s | %s %s | sed %s > %s" % \
+	  ( dotFile, dotExe, dotArgs, sed, psFile )
+else:
+    cmd = "%s | %s %s -o %s" % \
+	  ( dotFile, dotExe, dotArgs, psFile )
+
+os.system( cmd )
+
+if os.path.exists( psFile ):
+    try:
+    	print 'lpr -P%s %s' % ( os.environ['PRINTER'], psFile )
+    except:
+    	pass
+
+    try:
+	print showps, psArgs, psFile
+	os.system( '%s %s %s' % ( showps, psArgs, psFile ) )
+	os.unlink( psFile )
+    except:
+    	os.unlink( psFile )

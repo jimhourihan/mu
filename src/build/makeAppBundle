@@ -1,0 +1,250 @@
+#!/usr/bin/env python
+#
+#  Copyright (c) 2001, Tweak Films
+#  Copyright (c) 2008, Tweak Software
+# 
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions
+#  are met:
+#
+#     * Redistributions of source code must retain the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer.
+#
+#     * Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials
+#       provided with the distribution.
+#
+#     * Neither the name of the Tweak Software nor the names of its
+#       contributors may be used to endorse or promote products
+#       derived from this software without specific prior written
+#       permission.
+# 
+#  THIS SOFTWARE IS PROVIDED BY Tweak Software ''AS IS'' AND ANY EXPRESS
+#  OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+#  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED. IN NO EVENT SHALL Tweak Software BE LIABLE FOR
+#  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+#  OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+#  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+#  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+#  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+#  DAMAGE.
+#
+#
+#   Creates a self contained application bundle out of a dependant one. 
+#
+#   The binary directory is examined to locate its dependent dylibs
+#   and each of those is in turn examined until all dylibs are
+#   located. The dylibs are installed into the app bundle.
+#
+#   The binaries are then modified using install_name_tool so that it
+#   uses the local versions of the dylibs. The same process is
+#   repeated for each library that needs it.
+#
+
+import os
+import os.path
+import sys
+import string
+import re
+
+#
+#   Usage: makeAppBundle /path/to/bin/dir relative/path/to/install/lib/dir
+#
+#   NOTE: the relative path is relative to the bin dir passed as the first
+#   argument.
+#
+
+bindir    = sys.argv[1]
+libsuffix = "lib"
+libdir    = sys.argv[2]
+fworkdir  = sys.argv[3]
+#libdir    = "%s/../lib" % bindir
+#fworkdir  = "%s/../Frameworks" % bindir
+
+#print "INFO: bin ->", bindir
+#print "INFO: lib ->", libdir
+#print "INFO: fwork ->", fworkdir
+
+#echoOnly = True
+echoOnly = False
+
+libraryFrameworksDir = "/Library/Frameworks"
+
+def runCommand(cmd):
+    if echoOnly:
+        print "CMD:", cmd
+    else:
+        os.system(cmd)
+
+runCommand("mkdir -p %s" % libdir)
+runCommand("mkdir -p %s" % fworkdir)
+
+def frameworkBundleDir(f):
+    parts = os.path.split(f)
+    while parts[1] != "":
+        if re.match(".+\.framework", parts[1]) != None:
+            return parts
+        parts = os.path.split(parts[0])
+    return None
+
+def frameworkRelativePath(f):
+    parts = frameworkBundleDir(f)
+    return f[len(parts[0])+1:]
+
+def otool(file):
+    dylibs = []
+    fworks = []
+    p = os.popen("otool -L %s" % file, "r")
+    line = p.readline() # skip this one (its the lib name with a ':')
+    #line = p.readline() # skip this one (its the lib name)
+    line = p.readline()
+
+    while line:
+        obj = string.split(line)[0]
+        if re.match("/usr/lib", obj) == None:
+            if re.match("/System", obj) == None:
+                if re.match("@executable", obj) == None:
+                    if re.match(".+\.dylib", obj) != None:
+                        # Don't add a .dylib to its own list of libs
+                        if re.match(".+\.dylib", file) != None:
+                            if not file.endswith(obj):
+                                dylibs.append(obj)
+                        else:
+                            dylibs.append(obj)
+                    elif re.match(".+\.framework", obj) != None:
+                        # if its in the fworks path make it an absolute path name
+                        if obj[0] != '/':
+                            obj = os.path.join(libraryFrameworksDir, obj)
+                        fworks.append(obj)
+        line = p.readline()
+
+    p.close()
+    return (dylibs, fworks)
+
+def changeLibInstallNames(file, libs, newpath):
+    if len(libs):
+        cmd = "install_name_tool"
+        for l in libs:
+            cmd += " -change %s %s/%s" % (l, newpath, os.path.basename(l))
+        cmd += " " + file
+        print "INFO: makeAppBundle: processing %s" % file
+        print "INFO:   ", cmd
+        runCommand(cmd)
+
+def changeFworkInstallNames(file, fworks, newpath):
+    if len(fworks):
+        cmd = "install_name_tool"
+        count = 0
+        for f in fworks:
+            if os.path.basename(f) != os.path.basename(file):
+                cmd += " -change %s %s/%s -change %s %s/%s" % (f, newpath, frameworkRelativePath(f), frameworkRelativePath(f), newpath, frameworkRelativePath(f))
+                count += 1
+        cmd += " " + file
+        if count != 0:
+            print "INFO: makeAppBundle: processing %s" % file
+            print "INFO:   ", cmd
+            runCommand(cmd)
+
+
+#
+#   find all of the libs
+#
+
+binfiles = []
+libs = []
+fworks = []
+
+def addToLibsAndFworks(stuff):
+    (ls, fs) = stuff
+    for l in ls:
+        if l not in libs:
+            print "INFO: makeAppBundle: adding library", l
+            libs.append(l)
+    for f in fs:
+        if f not in fworks:
+            print "INFO: makeAppBundle: adding framework", f
+            fworks.append(f)
+
+for file in os.listdir(bindir):
+    path = os.path.join(bindir, file)
+    if os.path.isfile(path) and os.access(path, os.X_OK) and os.path.splitext(path)[1] != '.py':
+        binfiles.append(path)
+        print "INFO: makeAppBundle: adding binary", file
+
+for binary in binfiles:
+    b = otool(binary)
+    addToLibsAndFworks(b)
+
+#
+#   NOTE: this could add stuff to libs in the middle of the loop
+#
+
+sublibs = {}
+sublibfworks = {}
+
+subfworks = {}
+
+for l in libs:
+    bpath = os.path.basename(l)
+    sobjs = otool(l)
+    sublibs[bpath] = sobjs[0]
+    sublibfworks[bpath] = sobjs[1]
+    addToLibsAndFworks(sobjs)
+
+for f in fworks:
+    sobjs = otool(f)
+    addedFworks = []
+    for s in sobjs[1]:
+        if s[0] == '/':
+            addedFworks.append(s)
+        else:
+            addedFworks.append(os.path.join(libraryFrameworksDir, s))
+    subfworks[f] = addedFworks
+    addToLibsAndFworks(sobjs)
+
+for binary in binfiles:
+    changeLibInstallNames(binary, libs, "@executable_path/../%s" % libsuffix)
+    changeFworkInstallNames(binary, fworks, "@executable_path/../Frameworks")
+
+for l in libs:
+    basename = os.path.basename(l)
+    installname = os.path.join(libdir, basename)
+    cp = "install -cp -m 755 %s %s" % (l, installname)
+    print "INFO: makeAppBundle: installing lib %s" % l
+    runCommand(cp)
+    exepath = "@executable_path/../%s" % libsuffix
+    changeLibInstallNames(installname, sublibs[basename], exepath)
+    id = "install_name_tool -id %s/%s %s" % (exepath, basename, installname)
+    print "INFO:", id
+    runCommand(id)
+
+for f in fworks:
+    base = os.path.dirname(f)
+    longbase = base
+    (fpath, base) = frameworkBundleDir(f)
+    basename = os.path.basename(f)
+    installname = os.path.join(fworkdir, base, basename)
+    if base == None:
+        print "ERROR: unable to continue"
+        raise BaseException()
+    print "INFO: makeAppBundle: installing framework %s" % f
+    rm = "rm -rf %s/%s" % (fworkdir, base)
+    #print "INFO: rm command: '%s'" % rm
+    runCommand(rm)
+    cp = "cp -Rf %s %s" % (os.path.join(fpath, base), fworkdir)
+    #print "INFO: cp command: '%s'" % cp
+    runCommand(cp)
+    exepath = "@executable_path/../Frameworks"
+    changeFworkInstallNames(installname, subfworks[f], exepath)
+    id = "install_name_tool -id %s/%s %s" % (exepath, frameworkRelativePath(f), installname)
+    print "INFO:", id
+    runCommand(id)
+
+# Local Variables:
+# mode: python
+# end:

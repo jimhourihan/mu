@@ -1,0 +1,151 @@
+#!/usr/bin/env python
+#
+#  Copyright (c) 2001, Tweak Films
+#  Copyright (c) 2008, Tweak Software
+# 
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions
+#  are met:
+#
+#     * Redistributions of source code must retain the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer.
+#
+#     * Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials
+#       provided with the distribution.
+#
+#     * Neither the name of the Tweak Software nor the names of its
+#       contributors may be used to endorse or promote products
+#       derived from this software without specific prior written
+#       permission.
+# 
+#  THIS SOFTWARE IS PROVIDED BY Tweak Software ''AS IS'' AND ANY EXPRESS
+#  OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+#  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED. IN NO EVENT SHALL Tweak Software BE LIABLE FOR
+#  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+#  OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+#  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+#  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+#  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+#  DAMAGE.
+#
+#
+#  This use the 'dot' program from the 'graphviz' package.
+#  Generates a file acceptable to the "dot" program to draw
+#  a graph of the project dependancies.
+#
+#  EXAMPLE dot command:
+#
+#   dot -Nfontsize=15 -Grotate=90 -Granksep=1.1 -Tps -Gsize=10.25,10.25 dag.dot
+#
+
+import buildTools
+import os
+import sys
+
+includeSystemLib = 1
+
+if buildTools.isProjectDirectory("."):
+    buildTools.verbose = 0
+    p = buildTools.loadCachedProjectDAG()
+    buildTools.verbose = 1
+    targets = p.projectsInBuildOrder(includeSystemLib)
+elif buildTools.isPackageDirectory("."):
+    buildTools.verbose = 0
+    p = buildTools.Package(".")
+    buildTools.verbose = 1
+    targets = p.projectsInBuildOrder(includeSystemLib)
+else:
+    buildTools.error("Not a project or package")
+    sys.exit(-1)
+
+
+# Edge culling is off by default
+showCulledDag = False; 
+
+def markAsVisited(node, c):
+    if showCulledDag:
+        markNode[c] = 1
+    else:
+        markEdge[node][c] = 1
+
+
+def isNotVisited(node, c):
+    if showCulledDag:
+        return (markNode[c] == 0)
+    else:
+        return (not markEdge[node].has_key(c) or markEdge[node][c] == 0)
+
+
+def connectChildren(node):
+    """
+    Draw the parent/child pairs.  Children who are not found on the LIBS line
+    are assumed to be PROJECT's and are drawn with a dotted line.
+    """
+    projects = node.libs + node.modules + node.frameworks
+    for c in projects:
+        if c != '' and isNotVisited(node.name, c):
+                notFound = True
+                for prj in targets:
+                    if prj.name == c and not prj.systemLib:
+                        notFound = False
+                        connectChildren(prj)
+                        break
+    	        if c in node.libs + node.frameworks:
+		        print '    "%s" -> "%s";' % ( node.name, c )
+                        markAsVisited(node.name, c)
+	        else:
+	                print '    "%s" -> "%s" [style=dotted];' % ( node.name, c )
+                        markAsVisited(node.name, c)
+
+try:
+    if len(sys.argv) > 1 and sys.argv[1]=='-cull':
+        showCulledDag = True
+except:    
+    print "dag2dot [-cull]"
+    print ""
+    sys.exit(1)
+
+
+# Mark all the dependent project edges as not visited
+markNode = {}
+markEdge = {}
+
+
+topNode = targets[-1]
+markEdge[topNode.name] = {}
+systemNodes = []
+
+for node in targets:
+    markNode[node.name] = 0
+    markEdge[node.name] = {}
+    if not node.systemLib:
+        projectNames = node.libs + node.modules + node.frameworks
+        for prj in projectNames:
+            if prj != '' and not markNode.has_key(prj):
+                markNode[prj] = 0
+                markEdge[prj] = {}
+    else:
+        systemNodes.append(node.name)
+
+#
+# Print the node attributes
+#   o System libs (out of SRC_ROOT tree projects) are drawn with a 'box'
+#   o $SRC_ROOT libs/projects are drawn with an 'ellipse'
+#
+print 'digraph dependencies {'
+connectChildren(topNode)
+
+for node in markNode.keys():
+    if node in systemNodes:
+        print '    "%s" [shape=%s];' % ( node, 'box' )
+    else:
+        print '    "%s" [shape=%s];' % ( node, 'ellipse' )
+        
+print '}'
+

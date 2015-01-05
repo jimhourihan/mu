@@ -1,0 +1,6 @@
+
+#
+#   default is release
+#
+
+BOOST_LIB_PATTERN := boost_%-vc100-mt-1_49

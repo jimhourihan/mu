@@ -1,0 +1,20 @@
+
+Files of the form:
+
+    Makefile.PLATFORM.ARCH.COMPILER
+
+are called "platform" makefiles in Makefile.master. These generally contain
+the bulk of the platform dependent information.
+
+Files of the form:
+
+    Makefile.PLATFORM.ARCH.COMPILER.TYPE
+
+where TYPE is the contents of the BUILD_TYPE variable are included after
+the platform makefile and can override rules/variables. Typically this is
+just the OPTFLAGS and various related variables. These are called "target"
+makefiles in Makefile.master.
+
+The $BUILD_ROOT/build/Makefile.build file is also sourced, but typically
+only holds the values of PLATFORM, ARCH, COMPILER, and BUILD_TYPE. However,
+it is possible to further override variables in that file.

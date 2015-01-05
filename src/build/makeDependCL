@@ -1,0 +1,160 @@
+#!/usr/bin/python 
+#
+#  Copyright (c) 2001, Tweak Films
+#  Copyright (c) 2008, Tweak Software
+# 
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions
+#  are met:
+#
+#     * Redistributions of source code must retain the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer.
+#
+#     * Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials
+#       provided with the distribution.
+#
+#     * Neither the name of the Tweak Software nor the names of its
+#       contributors may be used to endorse or promote products
+#       derived from this software without specific prior written
+#       permission.
+# 
+#  THIS SOFTWARE IS PROVIDED BY Tweak Software ''AS IS'' AND ANY EXPRESS
+#  OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+#  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED. IN NO EVENT SHALL Tweak Software BE LIABLE FOR
+#  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+#  OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+#  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+#  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+#  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+#  DAMAGE.
+#
+
+import sys, re, os, subprocess
+
+# Default the drives to 'C'/'c'
+cygSrcRootDrive = "Cc"
+cygBuildRootDrive = "Cc"
+cygMSVCDrive = "Cc"
+
+if (sys.argv[1] == "-nosys" ) :
+    noSys = True
+    if (sys.argv[2] == "-cygdrives" ) :
+        cygSrcRootDrive = sys.argv[3].upper() + sys.argv[3].lower()
+        cygBuildRootDrive = sys.argv[4].upper() + sys.argv[4].lower()
+        cygMSVCDrive = sys.argv[5].upper() + sys.argv[5].lower()
+        infile = sys.argv[6]
+        outfile = sys.argv[7]
+        newargs = sys.argv[8:]
+    else:
+        infile = sys.argv[2]
+        outfile = sys.argv[3]
+        newargs = sys.argv[4:]
+    srcRoot = os.getenv("SRC_ROOT")
+    buildRoot = os.getenv("BUILD_ROOT")
+    # add trailing '/' character for matching
+    if srcRoot[-1] != '/':
+        srcRoot += '/'
+    if buildRoot[-1] != '/':
+        buildRoot += '/'
+else :
+    noSys = False
+    if (sys.argv[1] == "-cygdrives" ) :
+        cygSrcRootDrive = sys.argv[2].upper() + sys.argv[2].lower()
+        cygBuildRootDrive = sys.argv[3].upper() + sys.argv[3].lower()
+        cygMSVCDrive = sys.argv[4].upper() + sys.argv[4].lower()
+        infile = sys.argv[5]
+        outfile = sys.argv[6]
+        newargs = sys.argv[7:]
+    else:
+        infile = sys.argv[1]
+        outfile = sys.argv[2]
+        newargs = sys.argv[3:]
+
+#
+#   Have to ignore case on windows because the file system is case insensitive
+#
+
+rootRE = re.compile(srcRoot, re.IGNORECASE)
+buildRootRE = re.compile(buildRoot, re.IGNORECASE)
+lineRE = re.compile("#line")
+
+#
+#   Collect compiler output
+#
+
+clProc = subprocess.Popen (["cl"] + ["-E"] + newargs + [infile], stdout=subprocess.PIPE)
+clOutput = clProc.stdout.readlines()
+
+
+#
+#   Open dependencies file and initialize with target file
+#
+
+objfile = re.sub ("[" + cygBuildRootDrive + "]:", "/cygdrive/" + cygBuildRootDrive[1], os.path.splitext(outfile)[0]) + ".obj"
+
+# We have to sub for both src and build root drives since src can reside under
+# the build root as metasrc.
+srcfile = re.sub ("["+ cygSrcRootDrive + "]:", "/cygdrive/" + cygSrcRootDrive[1], infile)
+if cygBuildRootDrive != cygSrcRootDrive :
+    srcfile = re.sub ("["+ cygBuildRootDrive + "]:", "/cygdrive/" + cygBuildRootDrive[1], srcfile)
+
+f = open (outfile, "w")
+f.write ("install_project_headers %s: %s \\\n" % (objfile, srcfile))
+
+#
+#   Process Compiler output
+#
+
+outputSet = set()
+
+for l in clOutput :
+
+    #   skip lines that don't have "#line" in them
+    if lineRE.search(l) == None:
+        continue
+
+    #   remove newline, carriage return
+    l = l[:-2]
+
+    #   remove #line stuff
+    l = re.sub ("^ *#line [0-9]* ", "", l)
+
+    #   remove quotes
+    l = re.sub ('"', "", l)
+
+    #   remove trailing spaces
+    l = re.sub (" *$", "", l)
+
+    #   convert windows to cygwin drive spec
+    l = re.sub ("[" + cygMSVCDrive + "]:", "/cygdrive/" + cygMSVCDrive[1], l)
+    if cygMSVCDrive != cygSrcRootDrive :
+        l = re.sub ("[" + cygSrcRootDrive + "]:", "/cygdrive/" + cygSrcRootDrive[1], l)
+    if cygBuildRootDrive != cygSrcRootDrive and cygBuildRootDrive != cygMSVCDrive :
+        l = re.sub ("[" + cygBuildRootDrive + "]:", "/cygdrive/" + cygBuildRootDrive[1], l)
+
+    #   swap back- to fwd slashes
+    l = re.sub ("\\\\+", "/", l)
+
+    #   escape spaces
+    l = re.sub (" ", "\\ ", l)
+
+    #   add backslash to end
+    l = l + " \\"
+
+    if noSys:
+        if rootRE.search(l) == None and buildRootRE.search(l) == None:
+            continue
+
+    if (l not in outputSet) :
+        outputSet.add (l)
+	f.write (l + "\n")
+
+f.write(" \n")
+f.close()
+

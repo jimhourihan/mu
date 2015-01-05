@@ -1,0 +1,616 @@
+#  -*- mode: makefile -*-
+# 
+#  Copyright (c) 2001, Tweak Films
+#  Copyright (c) 2008, Tweak Software
+# 
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions
+#  are met:
+#
+#     * Redistributions of source code must retain the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer.
+#
+#     * Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials
+#       provided with the distribution.
+#
+#     * Neither the name of the Tweak Software nor the names of its
+#       contributors may be used to endorse or promote products
+#       derived from this software without specific prior written
+#       permission.
+# 
+#  THIS SOFTWARE IS PROVIDED BY Tweak Software ''AS IS'' AND ANY EXPRESS
+#  OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+#  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED. IN NO EVENT SHALL Tweak Software BE LIABLE FOR
+#  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+#  OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+#  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+#  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+#  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+#  DAMAGE.
+#
+#   This make file is used by the packaging build Makefiles
+#   It builds multiple projects across the build tree.
+#
+#
+#  Choices for DISTRIBUTION_BUILD_MODE are:
+#   CLEAN = full clean build for a distribution
+#   INCREMENTAL = only build projects that are not built or have updates
+#   CLEAN_BINARIES = INCREMENTAL but alway rebuild binaries defined by FORCE_REBUILD
+#
+
+ifndef TYPE
+$(error PACKAGES require the TYPE variable be set)
+endif
+
+ifndef MAKEFILE_MASTER_INCLUDED
+include $(SRC_ROOT)/build/Makefile.master
+endif
+
+.PHONY : distribution clean_distribution incremental_distribution clean_binaries_distrbution
+.PHONY : build_distribution build_installer clean_build
+.PHONY : upload-dropbox upload-web upload
+
+export MAJOR_VERSION
+export MINOR_VERSION
+export REVISION_NUMBER
+export RELEASE_DESCRIPTION
+
+VERSION     ?= $(MAJOR_VERSION).$(MINOR_VERSION).$(REVISION_NUMBER)
+
+WEB_UPLOAD_USER_HOST ?= tweak@tweak.webfactional.com
+
+ifndef QTDIR
+ifdef QT
+QTDIR = $(QT)
+endif
+endif
+
+ifndef SYSTYPE
+ifeq ($(ARCH),IA32)
+SYSTYPE = x86
+endif
+
+ifeq ($(ARCH),IA32_64)
+SYSTYPE = x86-64
+endif
+endif
+
+ifeq ($(PLATFORM),DARWIN)
+APPLICATION_LOWERCASE = $(call tolower,$(APPLICATION))
+INSTALL_NAME ?= $(APPLICATION_LOWERCASE)-mac-$(SYSTYPE)-$(VERSION)
+else
+INSTALL_NAME ?= $(PACKAGE)-$(UNAME)-$(SYSTYPE)-$(VERSION)
+endif
+
+INSTALL_ROOT = /tmp/$(INSTALL_NAME)
+
+archive_dir  = $(SRC_ROOT)/../packages/tarballs
+
+ifeq ($(TYPE),DISTRIBUTION_ZIP)
+ARCHIVE_EXT  ?= .zip
+archive	     = $(archive_dir)/$(INSTALL_NAME)$(ARCHIVE_EXT)
+ARCHIVE_CMD   = cd $(INSTALL_ROOT)/..; zip -9 -r -q $(archive) $(INSTALL_NAME)
+endif
+
+ifeq ($(TYPE),DISTRIBUTION_DMG)
+DMG_ROOT     ?= $(APPLICATION)
+ARCHIVE_EXT  ?= .dmg
+archive	     = $(archive_dir)/$(INSTALL_NAME)$(ARCHIVE_EXT)
+ARCHIVE_CMD  =	$(MKDIR) $(archive_dir) ; hdiutil create -ov \
+                       -srcFolder $(DMG_ROOT) \
+                       -format UDZO \
+		       -stretch 2400m \
+                       -o $(archive)
+endif
+
+ifeq ($(TYPE),DISTRIBUTION_CODESIGN_PKG)
+PKG_ROOT     ?= $(APPLICATION)
+ARCHIVE_EXT  ?= .pkg
+archive	     = $(archive_dir)/$(APPLICATION_LOWERCASE)-$(SYSTYPE)-$(VERSION)$(ARCHIVE_EXT)
+APP_DIR      = $(PKG_ROOT)/$(APPLICATION).app
+endif
+
+
+ifeq ($(TYPE),DISTRIBUTION_PKG)
+ARCHIVE_EXT  ?= .pkg
+archive	     = $(archive_dir)/$(APPLICATION_LOWERCASE)-$(SYSTYPE)-$(VERSION)$(ARCHIVE_EXT)
+endif
+
+ifeq ($(TYPE),DISTRIBUTION_TAR_GZ)
+ARCHIVE_EXT  ?= .tar.gz
+archive	     = $(archive_dir)/$(INSTALL_NAME)$(ARCHIVE_EXT)
+ARCHIVE_CMD   = tar -C $(INSTALL_ROOT)/.. -czf $(archive) $(INSTALL_NAME)
+
+ifeq ($(PLATFORM),LINUX)
+ifneq ($(SKIP_SYMBOLS),TRUE)
+symbol_archive = $(dir $(archive))symbols-$(notdir $(archive))
+SYMBOLS_CMD   = tar -C $(BUILD_ROOT) -czf $(symbol_archive) symbols
+endif
+endif
+endif
+
+
+#
+#  This is a string that we replace the unicode string
+#   "WINDOWS_REG_TAG" version. This is done so that sed
+#   works on Windows registry .reg files. UTF-16.
+ifeq ($(PLATFORM),WINDOWS)
+toUTF16 = $(shell echo $(1) | sed 's/\(.\)/\1\\x00/g')
+WINDOWS_REG_TAG := $(call toUTF16,WINDOWS_REG_TAG)
+WINDOWS_REG_STRING ?= C\x00:\x00\\\x00\\\x00P\x00r\x00o\x00g\x00r\x00a\x00m\x00 \x00F\x00i\x00l\x00e\x00s\x00\\\x00\\\x00T\x00w\x00e\x00a\x00k\x00\\\x00\\\x00R\x00V\x00-\x00$(call toUTF16,$(VERSION))-\x006\x004\x00
+endif
+
+
+DOCCMDS0     = $(addsuffix ;,$(DOCS))
+DOCCMDS      = $(addprefix $(MAKE) -C $(SRC_ROOT)/../doc/,$(DOCCMDS0))
+
+BINARIES    += $($(addprefix BINARIES_,$(PLATFORM))) \
+               $($(addprefix BINARIES_,$(ARCH))) \
+               $($(addprefix BINARIES_,$(PLATFORM)_$(ARCH)))
+LIBRARIES   += $($(addprefix LIBRARIES_,$(PLATFORM))) \
+               $($(addprefix LIBRARIES_,$(ARCH)))
+               $($(addprefix LIBRARIES_,$(PLATFORM)_$(ARCH)))
+PUBSOURCES  += $($(addprefix PUBSOURCES_,$(PLATFORM))) \
+               $($(addprefix PUBSOURCES_,$(ARCH))) \
+               $($(addprefix PUBSOURCES_,$(PLATFORM)_$(ARCH))) 
+
+
+
+#
+# Exclude nsapps and apps from linux/windows and darwin respectively.
+# NB: Should replace this logic with a build dag method at some point.
+#
+ifeq ($(DISTRIBUTION_BUILD_MODE),CLEAN_BINARIES)
+ifeq ($(PLATFORM),DARWIN)
+clobber_projects = $(foreach p,$(FORCE_REBUILD),$(filter-out $(SRC_ROOT)/bin/apps/rv $(SRC_ROOT)/bin/apps/rvx $(SRC_ROOT)/bin/apps/rvsdi,$(filter $(SRC_ROOT)/%/$(p),$(binprojpaths) $(libprojpaths) $(pubprojpaths))))
+else
+clobber_projects = $(foreach p,$(FORCE_REBUILD),$(filter-out $(SRC_ROOT)/bin/nsapps/%,$(filter $(SRC_ROOT)/%/$(p),$(binprojpaths) $(libprojpaths) $(pubprojpaths))))
+endif
+
+ifneq ($(FORCE_REBUILD),)
+FORCE_REBUILD_CMD = @+echo ""; echo "**** START - FORCE BUILD PROJECTS = $(FORCE_REBUILD) ***"; for proj in $(clobber_projects) ""; do \
+	    if [ "$$proj" != "" ]; then	                \
+	        $(MAKE) --no-print-directory -C $$proj clobber MAKEFLAGS= ; \
+                err=$$?; \
+                if [ $$err -ne 0 ]; then       \
+                echo "Error: encountered clobbering in $$proj";    \
+                errlist="$$errlist $$proj";             \
+                $(EXIT_ERR);                            \
+                fi;                                     \
+	    fi;                                         \
+	    done;                                       \
+            echo "**** END - FORCE BUILD PROJECTS ***"; echo""
+endif
+endif
+
+#  Setup the command for installing docs from
+#  Dropbox.
+#  NB: Check to ensure the version exists.
+#
+ifdef DOCS
+DROPBOX_ROOT ?= ~/Dropbox
+ifneq ($(SKIP_DOCS),TRUE)
+DROPBOX_DOCS_DIR ?= $(DROPBOX_ROOT)/admin/docs/$(VERSION)
+ifneq ($(wildcard $(DROPBOX_DOCS_DIR)),)
+DOCS_INSTALL  ?= @echo ""; echo "*** Installing docs: Executing '$(DROPBOX_ROOT)/admin/docs/bin/doit install $(VERSION)'..."; \
+                  echo ""; $(DROPBOX_ROOT)/admin/docs/bin/doit install $(VERSION)
+else
+DOCS_INSTALL  = @echo ""; echo "*** Error: Unable to install docs: Missing $(DROPBOX_DOCS_DIR)"; echo ""; exit 1
+endif
+endif
+endif
+
+
+
+include $(SRC_ROOT)/build/Makefile.install_headers_and_source
+
+package:
+	$(MAKE) rebuild
+
+#----------------------------------------------------------------------
+#
+#   tar.gz/zip version
+#
+
+ifneq ($(filter DISTRIBUTION_TAR_GZ DISTRIBUTION_ZIP,$(TYPE)),)
+build_distribution: init
+ifdef DOCS_INSTALL
+	$(call errorhandler,$(DOCS_INSTALL))
+endif
+	if [ -d $(BUILD_ROOT)/plugins/Packages ] ; then \
+	   $(RRM) $(BUILD_ROOT)/plugins/Packages ; \
+	   $(MKDIR) $(BUILD_ROOT)/plugins/Packages ; \
+        fi
+	if [ -d $(BUILD_ROOT)/plugins/Mu ] ; then \
+	   $(RRM) $(BUILD_ROOT)/plugins/Mu ; \
+	   $(MKDIR) $(BUILD_ROOT)/plugins/Mu ; \
+        fi
+	if [ -d $(BUILD_ROOT)/plugins/SupportFiles ] ; then \
+	   $(RRM) $(BUILD_ROOT)/plugins/SupportFiles ; \
+	   $(MKDIR) $(BUILD_ROOT)/plugins/SupportFiles ; \
+        fi
+	if [ -d $(BUILD_ROOT)/plugins/ConfigFiles ] ; then \
+	   $(RRM) $(BUILD_ROOT)/plugins/ConfigFiles ; \
+	   $(MKDIR) $(BUILD_ROOT)/plugins/ConfigFiles ; \
+        fi
+ifdef FORCE_REBUILD_CMD
+	$(FORCE_REBUILD_CMD)
+endif
+ifdef DEPLOY
+	cp $(DEPLOY) $(BUILD_ROOT)/build/
+endif
+	$(MKDIR) $(archive_dir)
+	$(RM) -f $(archive)
+	if [ -d $(INSTALL_ROOT) ] ; then \
+	    $(RRM) $(INSTALL_ROOT) ; \
+	fi
+	$(MKDIR) $(INSTALL_ROOT) $(INSTALL_ROOT)/lib $(INSTALL_ROOT)/bin
+	$(MKDIR) $(INSTALL_ROOT)/lib
+	$(MKDIR) $(INSTALL_ROOT)/include
+	$(MKDIR) $(INSTALL_ROOT)/plugins/Profiles
+	$(MKDIR) $(INSTALL_ROOT)/scripts
+	$(MKDIR) $(INSTALL_ROOT)/etc
+	$(MKDIR) $(INSTALL_ROOT)/html
+	$(MKDIR) $(INSTALL_ROOT)/doc
+	$(MKDIR) $(INSTALL_ROOT)/src
+	$(MKDIR) $(INSTALL_ROOT)/pub
+	@echo ""; echo "*** START OF REBUILD STAGE ***"; echo "";
+	+$(MAKE) rebuild REBUILD_TARGET=std-wrapper-rvpkgs2
+	@echo ""; echo "*** END OF REBUILD STAGE ***"; echo "";
+	+$(SRC_ROOT)/build/copyTargets $(INSTALL_ROOT)/bin
+ifneq ($(strip $(PUBSOURCES)),)
+	cp -rf $(addprefix $(SRC_ROOT)/pub/,$(PUBSOURCES)) $(INSTALL_ROOT)/pub/
+endif
+ifdef DOCS
+	+$(DOCCMDS)
+	if [ -d $(BUILD_ROOT)/doc ] ; then \
+	   cp -r $(BUILD_ROOT)/doc $(INSTALL_ROOT) ; \
+        fi
+	if [ -d $(BUILD_ROOT)/info ] ; then \
+           cp -r $(BUILD_ROOT)/info $(INSTALL_ROOT) ; \
+        fi
+	if [ -d $(BUILD_ROOT)/html ] ; then \
+	   cp -r $(BUILD_ROOT)/html $(INSTALL_ROOT) ; \
+	fi
+endif
+ifdef EXTRA_INSTALL
+	+$(EXTRA_INSTALL)
+endif
+
+build_installer: build_distribution
+	$(SRC_ROOT)/build/makeBuildPackage $(INSTALL_ROOT)
+	$(ARCHIVE_CMD)
+ifdef SYMBOLS_CMD
+	$(SYMBOLS_CMD)
+endif
+	@ echo not removing $(INSTALL_ROOT)
+endif
+
+#----------------------------------------------------------------------
+#
+#   DMG version
+#
+
+
+ifeq ($(TYPE),DISTRIBUTION_DMG)
+build_distribution: init
+ifdef DOCS_INSTALL
+	$(call errorhandler,$(DOCS_INSTALL))
+endif
+	$(RM) -rf $(bundle_dir)
+	if [ -d $(BUILD_ROOT)/plugins/Packages ] ; then \
+	   $(RRM) $(BUILD_ROOT)/plugins/Packages ; \
+	   $(MKDIR) $(BUILD_ROOT)/plugins/Packages ; \
+        fi
+	if [ -d $(BUILD_ROOT)/plugins/Mu ] ; then \
+	   $(RRM) $(BUILD_ROOT)/plugins/Mu ; \
+	   $(MKDIR) $(BUILD_ROOT)/plugins/Mu ; \
+        fi
+	if [ -d $(BUILD_ROOT)/plugins/SupportFiles ] ; then \
+	   $(RRM) $(BUILD_ROOT)/plugins/SupportFiles ; \
+	   $(MKDIR) $(BUILD_ROOT)/plugins/SupportFiles ; \
+        fi
+	if [ -d $(BUILD_ROOT)/plugins/ConfigFiles ] ; then \
+	   $(RRM) $(BUILD_ROOT)/plugins/ConfigFiles ; \
+	   $(MKDIR) $(BUILD_ROOT)/plugins/ConfigFiles ; \
+        fi
+ifdef FORCE_REBUILD_CMD
+	$(FORCE_REBUILD_CMD)
+endif
+ifdef DEPLOY
+	cp $(DEPLOY) $(BUILD_ROOT)/build/
+endif
+	@echo ""; echo "*** START OF REBUILD STAGE ***"; echo "";
+	+$(MAKE) rebuild REBUILD_TARGET=std-wrapper-rvpkgs2
+	@echo ""; echo "*** END OF REBUILD STAGE ***"; echo "";
+	+$(SRC_ROOT)/build/copyTargets $(osbin_dir)
+	cd $(BUILD_ROOT)/lib ; $(SRC_ROOT)/build/makeAppBundle \
+		  $(osbin_dir) $(contents_lib_dir) $(frameworks_dir)
+ifdef DOCS
+	+$(DOCCMDS)
+ifneq ($(wildcard $(BUILD_ROOT)/doc/*),)
+	if [ -d $(BUILD_ROOT)/doc ] ; then \
+           $(MKDIR) $(resource_dir)/English.lproj ; \
+	   cp -r $(BUILD_ROOT)/doc/*.* $(resource_dir)/English.lproj ; \
+        fi
+endif
+ifneq ($(wildcard $(BUILD_ROOT)/info/*),)
+	if [ -d $(BUILD_ROOT)/info ] ; then \
+	   $(MKDIR) $(resource_dir)/English.lproj ; \
+           cp -r $(BUILD_ROOT)/info/*.* $(resource_dir)/English.lproj; \
+        fi
+endif
+ifneq ($(wildcard $(BUILD_ROOT)/html/*),)
+	if [ -d $(BUILD_ROOT)/html ] ; then \
+	   $(MKDIR) $(resource_dir)/English.lproj ; \
+	   cp -r $(BUILD_ROOT)/html/*.* $(resource_dir)/English.lproj; \
+	fi
+endif
+ifneq ($(wildcard $(BUILD_ROOT)/html/images/*),)
+	if [ -d $(BUILD_ROOT)/html/images ] ; then \
+	   $(MKDIR) -p $(resource_dir)/English.lproj/images ; \
+	   cp -r $(BUILD_ROOT)/html/images/* $(resource_dir)/English.lproj/images; \
+	fi
+endif
+endif
+ifdef EXTRA_INSTALL
+	+$(EXTRA_INSTALL)
+endif
+
+build_installer: build_distribution
+	$(MKDIR) -p $(DMG_ROOT)
+	$(RRM) $(DMG_ROOT)/$(notdir $(bundle_dir))
+	cp -Rp $(bundle_dir) $(DMG_ROOT)
+	$(RM) $(archive)
+	$(ARCHIVE_CMD)
+endif
+
+#----------------------------------------------------------------------
+#
+#   OSX PKG version
+#
+
+ifeq ($(TYPE),DISTRIBUTION_PKG)
+build_distribution: init
+ifdef DOCS_INSTALL
+	$(call errorhandler,$(DOCS_INSTALL))
+endif
+	if [ -d $(BUILD_ROOT)/plugins/Packages ] ; then \
+	   $(RRM) $(BUILD_ROOT)/plugins/Packages ; \
+	   $(MKDIR) $(BUILD_ROOT)/plugins/Packages ; \
+        fi
+	if [ -d $(BUILD_ROOT)/plugins/Mu ] ; then \
+	   $(RRM) $(BUILD_ROOT)/plugins/Mu ; \
+	   $(MKDIR) $(BUILD_ROOT)/plugins/Mu ; \
+        fi
+	if [ -d $(BUILD_ROOT)/plugins/SupportFiles ] ; then \
+	   $(RRM) $(BUILD_ROOT)/plugins/SupportFiles ; \
+	   $(MKDIR) $(BUILD_ROOT)/plugins/SupportFiles ; \
+        fi
+	if [ -d $(BUILD_ROOT)/plugins/ConfigFiles ] ; then \
+	   $(RRM) $(BUILD_ROOT)/plugins/ConfigFiles ; \
+	   $(MKDIR) $(BUILD_ROOT)/plugins/ConfigFiles ; \
+        fi
+ifdef FORCE_REBUILD_CMD
+	$(FORCE_REBUILD_CMD)
+endif
+ifdef DEPLOY
+	cp $(DEPLOY) $(BUILD_ROOT)/build/
+endif
+	$(MKDIR) $(archive_dir)
+	$(RM) $(archive)
+	if [ -d $(INSTALL_ROOT) ] ; then \
+	    $(RRM) $(INSTALL_ROOT) ; \
+	fi
+	$(MKDIR) $(INSTALL_ROOT) $(INSTALL_ROOT)/lib $(INSTALL_ROOT)/bin
+	$(MKDIR) $(INSTALL_ROOT)/lib
+	$(MKDIR) $(INSTALL_ROOT)/include
+	$(MKDIR) $(INSTALL_ROOT)/plugins/Profiles
+	$(MKDIR) $(INSTALL_ROOT)/scripts
+	$(MKDIR) $(INSTALL_ROOT)/etc
+	$(MKDIR) $(INSTALL_ROOT)/html
+	$(MKDIR) $(INSTALL_ROOT)/doc
+	@echo ""; echo "*** START OF REBUILD STAGE ***"; echo "";
+	+$(MAKE) rebuild std-wrapper-rvpkgs
+	@echo ""; echo "*** END OF REBUILD STAGE ***"; echo "";
+	+$(SRC_ROOT)/build/copyTargets $(INSTALL_ROOT)/bin
+ifdef DOCS
+	+$(DOCCMDS)
+	if [ -d $(BUILD_ROOT)/doc ] ; then \
+	   cp -r $(BUILD_ROOT)/doc $(INSTALL_ROOT) ; \
+        fi
+	if [ -d $(BUILD_ROOT)/info ] ; then \
+           cp -r $(BUILD_ROOT)/info $(INSTALL_ROOT) ; \
+        fi
+	if [ -d $(BUILD_ROOT)/html ] ; then \
+	   cp -r $(BUILD_ROOT)/html $(INSTALL_ROOT) ; \
+	fi
+endif
+ifdef EXTRA_INSTALL
+	+$(EXTRA_INSTALL)
+endif
+
+build_installer: build_distribution
+	/Developer/usr/bin/packagemaker -i $(BUNDLE_IDENTIFIER) -d $(PACKAGEMAKER_FILE) -o $(archive)
+endif
+
+
+
+#----------------------------------------------------------------------
+#
+#   Codesigned/Appstore PKG version
+#
+ifeq ($(TYPE),DISTRIBUTION_CODESIGN_PKG)
+build_distribution: init
+ifdef DOCS_INSTALL
+	$(call errorhandler,$(DOCS_INSTALL))
+endif
+	$(RRM) $(bundle_dir)
+	if [ -d $(BUILD_ROOT)/plugins/Packages ] ; then \
+	   $(RRM) $(BUILD_ROOT)/plugins/Packages ; \
+	   $(MKDIR) $(BUILD_ROOT)/plugins/Packages ; \
+        fi
+	if [ -d $(BUILD_ROOT)/plugins/Mu ] ; then \
+	   $(RRM) $(BUILD_ROOT)/plugins/Mu ; \
+	   $(MKDIR) $(BUILD_ROOT)/plugins/Mu ; \
+        fi
+	if [ -d $(BUILD_ROOT)/plugins/SupportFiles ] ; then \
+	   $(RRM) $(BUILD_ROOT)/plugins/SupportFiles ; \
+	   $(MKDIR) $(BUILD_ROOT)/plugins/SupportFiles ; \
+        fi
+	if [ -d $(BUILD_ROOT)/plugins/ConfigFiles ] ; then \
+	   $(RRM) $(BUILD_ROOT)/plugins/ConfigFiles ; \
+	   $(MKDIR) $(BUILD_ROOT)/plugins/ConfigFiles ; \
+        fi
+ifdef FORCE_REBUILD_CMD
+	$(FORCE_REBUILD_CMD)
+endif
+ifdef DEPLOY
+	cp $(DEPLOY) $(BUILD_ROOT)/build/
+endif
+	@echo ""; echo "*** START OF REBUILD STAGE ***"; echo "";
+	+$(MAKE) rebuild REBUILD_TARGET=std-wrapper-rvpkgs2
+	@echo ""; echo "*** END OF REBUILD STAGE ***"; echo "";
+	+$(SRC_ROOT)/build/copyTargets $(osbin_dir)
+	cd $(BUILD_ROOT)/lib ; $(SRC_ROOT)/build/makeAppBundle \
+		  $(osbin_dir) $(contents_lib_dir) $(frameworks_dir)
+ifdef DOCS
+	+$(DOCCMDS)
+ifneq ($(wildcard $(BUILD_ROOT)/doc/*),)
+	if [ -d $(BUILD_ROOT)/doc ] ; then \
+           $(MKDIR) $(resource_dir)/English.lproj ; \
+	   cp -r $(BUILD_ROOT)/doc/*.* $(resource_dir)/English.lproj ; \
+        fi
+endif
+ifneq ($(wildcard $(BUILD_ROOT)/info/*),)
+	if [ -d $(BUILD_ROOT)/info ] ; then \
+	   $(MKDIR) $(resource_dir)/English.lproj ; \
+           cp -r $(BUILD_ROOT)/info/*.* $(resource_dir)/English.lproj; \
+        fi
+endif
+ifneq ($(wildcard $(BUILD_ROOT)/html/*),)
+	if [ -d $(BUILD_ROOT)/html ] ; then \
+	   $(MKDIR) $(resource_dir)/English.lproj ; \
+	   cp -r $(BUILD_ROOT)/html/*.* $(resource_dir)/English.lproj; \
+	fi
+endif
+ifneq ($(wildcard $(BUILD_ROOT)/html/images/*),)
+	if [ -d $(BUILD_ROOT)/html/images ] ; then \
+	   $(MKDIR) -p $(resource_dir)/English.lproj/images ; \
+	   cp -r $(BUILD_ROOT)/html/images/* $(resource_dir)/English.lproj/images; \
+	fi
+endif
+endif
+ifdef EXTRA_INSTALL
+	+$(EXTRA_INSTALL)
+endif
+	$(MKDIR) -p $(PKG_ROOT)
+	$(RRM) $(PKG_ROOT)/$(notdir $(bundle_dir))
+	cp -Rp $(bundle_dir) $(PKG_ROOT)
+	$(RM) $(archive)
+
+include $(SRC_ROOT)/build/Makefile.codesign.$(PLATFORM)
+
+build_installer: codesign
+	@echo "Package building..."
+	$(PRODUCTBUILD_RULE)
+
+endif
+
+#
+#   make targets for DISTRIBUTION_ types
+#  
+#
+distribution: build_installer
+
+clean_distribution:
+	+$(MAKE) distribution DISTRIBUTION_BUILD_MODE=CLEAN
+
+incremental_distribution:
+	+$(MAKE) distribution DISTRIBUTION_BUILD_MODE=INCREMENTAL
+
+clean_binaries_distribution:
+	+$(MAKE) distribution DISTRIBUTION_BUILD_MODE=CLEAN_BINARIES
+
+package_info:
+	@$(ECHO) PACKAGE $(PACKAGE) $(TYPE) $(VERSION); \
+	$(ECHO) APPLICATION $(APPLICATION); \
+	$(ECHO) EXTRA_APPLICATIONS $(EXTRA_APPLICATIONS); \
+	$(ECHO) BINARIES $(BINARIES); \
+	$(ECHO) LIBRARIES $(LIBRARIES) 
+
+
+ifdef archive
+upload_dropbox:: $(archive)
+ifdef DROPBOX_UPLOAD_APPLICATION_DIR
+	$(MKDIR) $(DROPBOX_UPLOAD_APPLICATION_DIR)
+	cp -f $(archive) $(DROPBOX_UPLOAD_APPLICATION_DIR)
+else
+	@echo ""; echo "*** DROPBOX_UPLOAD_APPLICATION_DIR is undefined: no dropbox dir to upload to."
+endif
+endif # ifdef archive
+
+ifdef symbol_archive
+upload_dropbox:: $(symbol_archive)
+ifdef DROPBOX_UPLOAD_APPLICATION_DIR
+	$(MKDIR) $(DROPBOX_UPLOAD_APPLICATION_DIR)
+	cp -f $(symbol_archive) $(DROPBOX_UPLOAD_APPLICATION_DIR)
+else
+	@echo ""; echo "*** DROPBOX_UPLOAD_APPLICATION_DIR is undefined: no dropbox dir to upload to."
+endif
+endif # ifdef symbol_archive
+
+ifeq ($(WEB_UPLOAD_ENABLED),TRUE)
+ifdef archive
+ifdef WEB_UPLOAD_APPLICATION_DIR
+upload_web:: $(archive)
+	@echo ""; echo "*** Web uploading $^..."
+	scp $^ \
+            $(WEB_UPLOAD_USER_HOST):$(WEB_UPLOAD_APPLICATION_DIR)/new
+	ssh $(WEB_UPLOAD_USER_HOST) mv $(WED_UPLOAD_APPLICATION_DIR)/new/$(notdir $^) \
+            $(WED_UPLOAD_APPLICATION_DIR)
+	@echo ""; echo "*** Web upload of $^ is COMPLETE."
+else
+	@echo ""; echo "*** WEB_UPLOAD_APPLICATION_DIR is undefined: no web dir to upload to."
+endif
+endif # ifdef archive
+
+ifdef symbol_archive
+upload_web:: $(symbol_archive)
+ifdef WEB_UPLOAD_SYMBOLS_DIR
+	@echo ""; echo "*** Web uploading $^..."
+	scp $^ \
+             $(WEB_UPLOAD_USER_HOST):$(WEB_UPLOAD_SYMBOLS_DIR)/new
+	ssh $(WEB_UPLOAD_USER_HOST) mv $(WED_UPLOAD_SYMBOLS_DIR)/new/$(notdir $^) \
+             $(WEB_UPLOAD_SYMBOLS_DIR)/$(shell date "+%F-%H-%M")-$(notdir $^)
+	@echo ""; echo "*** Web upload of $^ is COMPLETE."
+else
+	@echo ""; echo "*** WEB_UPLOAD_SYMBOLS_DIR is undefined: no web dir to upload to."
+endif
+endif # ifdef symbol_archive
+else
+upload_web:
+	@echo ""; echo "*** Web upload is not enabled/authorised ***."
+endif # ifeq ($(WEB_UPLOAD_ENABLED),TRUE)
+
+
+
+ifdef DROPBOX_UPLOAD_APPLICATION_DIR
+upload:: upload_dropbox
+endif
+ifdef WEB_UPLOAD_APPLICATION_DIR
+upload:: upload_web
+endif
+
+
+
+default: distribution
+
+clean_build: clean_distribution
+

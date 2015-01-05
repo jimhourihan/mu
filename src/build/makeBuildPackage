@@ -1,0 +1,219 @@
+#!/usr/bin/env python
+#
+#  Copyright (c) 2001, Tweak Films
+#  Copyright (c) 2008, Tweak Software
+# 
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions
+#  are met:
+#
+#     * Redistributions of source code must retain the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer.
+#
+#     * Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials
+#       provided with the distribution.
+#
+#     * Neither the name of the Tweak Software nor the names of its
+#       contributors may be used to endorse or promote products
+#       derived from this software without specific prior written
+#       permission.
+# 
+#  THIS SOFTWARE IS PROVIDED BY Tweak Software ''AS IS'' AND ANY EXPRESS
+#  OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+#  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED. IN NO EVENT SHALL Tweak Software BE LIABLE FOR
+#  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+#  OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+#  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+#  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+#  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+#  DAMAGE.
+#
+#
+#   Creates a self contained build root, or if a /net/apps bundle already
+#   exists, it can run on that too.
+#
+
+import os
+import os.path
+import sys
+import string
+import re
+
+info       = False
+
+if "-info" in sys.argv:
+    info = True
+    sys.argv.remove("-info")
+
+def addEnvPath(vname, value):
+    try:
+        ldpath = os.environ[vname].split(":")
+    except:
+        ldpath = []
+
+    ldpath.insert(0, value);
+    nldpath = string.join(ldpath, ":")
+    os.environ[vname] = nldpath
+
+build_root = sys.argv[1]
+libdir     = "%s/lib" % build_root
+bindir     = "%s/bin" % build_root
+uname      = os.uname()[0]
+plugdirs   = ["%s/plugins/libquicktime" % build_root,
+              "%s/plugins/ImageFormats" % build_root,
+              "%s/plugins/MovieFormats" % build_root,
+              "%s/plugins/VideoDevices" % build_root,
+              "%s/plugins/OIIO" % build_root,
+              "%s/plugins/Mu" % build_root]
+
+syslibs = [re.compile(r"/usr/X11R6/lib/.*"),
+           re.compile(r"/usr/X11R6/lib64/.*"),
+           re.compile(r"/lib/.*"),
+           re.compile(r"/lib64/.*"),
+           re.compile(r"/usr/lib/.*"),
+           re.compile(r"/usr/lib64/.*"),
+           re.compile(r".*/libdl\..*")]
+
+syslibsok = [re.compile(r".*/libgcc_s[.-].*"),
+             re.compile(r".*/libstdc\+\+[.-].*"),
+             re.compile(r".*/libaio[.-].*"),
+             #re.compile(r".*/libdv[.-].*"),
+             #re.compile(r"/lib/libasound.*"),
+             re.compile(r".*/libvorbis.*")]
+
+
+addEnvPath("LD_LIBRARY_PATH", os.environ["BUILD_ROOT"] + "/lib")
+addEnvPath("LD_LIBRARY_PATH", "/usr/local/Trolltech/Qt/lib")
+
+def noMatchSysLib(name):
+    ok = False
+    for pat in syslibsok:
+        if pat.match(name) != None:
+            ok = True
+    if ok == False:
+        for pat in syslibs:
+            if pat.match(name) != None:
+                return False
+    return True
+
+def otool(file):
+    list = []
+    p = os.popen("otool -L %s" % file, "r")
+    line = p.readline() # skip this one (its the lib name with a ':')
+    line = p.readline() # skip this one (its the lib name)
+    line = p.readline()
+
+    while line:
+        lib = string.split(line)[0]
+        if re.match("/usr/lib", lib) == None:
+            if re.match("/System", lib) == None:
+                if re.match("@executable", lib) == None:
+                    list.append(lib)
+        line = p.readline()
+
+    p.close()
+    return list
+
+def ldd(file):
+    list = []
+    error = False
+    p = os.popen("ldd %s" % file, "r")
+    line = p.readline()
+
+    while line:
+        m = re.match("[ \t]+.*=>[ \t]+(.*) \(0x[0-9a-f]+\)", line)
+        if m != None:
+            list.append(m.group(1))
+        m = re.match("[ \t]+.*=>[ \t]+not found[ \t]*", line)  
+        if m != None:
+            print "ERROR:", line
+            error = True
+        line = p.readline()
+
+    p.close()
+    if error:
+        sys.exit(-1)
+    return list
+
+#
+#   binary libraries
+#
+
+binfiles = os.listdir(bindir)
+alllibs = []
+libs = []
+
+if sys.platform == "darwin":
+    libfunc = otool
+elif sys.platform == "cygwin":
+    sys.exit(0)
+else:
+    libfunc = ldd
+
+for file in binfiles:
+    print "INFO: examining", file
+    alllibs.extend(libfunc(os.path.join(bindir, file)))
+
+for dir in plugdirs:
+    if os.path.exists(dir):
+        for file in os.listdir(dir):
+            t = os.path.splitext(file)
+            if (t[1] == ".so" or t[1] == ".dylib") and file != "io_ari.so" :
+                print "INFO: examining2", file
+                alllibs.extend(libfunc(os.path.join(dir, file)))
+
+alllibs = filter(noMatchSysLib, alllibs)
+alllibs.sort()
+
+for i in alllibs[:]:
+    t = os.path.splitext(i)
+    if t[1] == ".so" and file != "io_ari.so" :
+        print "INFO: examining", file
+        alllibs.extend(libfunc(i))
+
+alllibs = filter(noMatchSysLib, alllibs)
+alllibs.sort()
+
+for i in alllibs:
+    if i not in libs:
+        libs.append(i)
+
+if info == True:
+    print
+    for i in libs:
+        print i
+else:
+    if libdir[-1] != '/':
+        libdir += '/'
+    print "INFO: copying to", libdir
+    stdppRE = re.compile(r".*/libstdc\+\+[.-].*")
+    for i in libs:
+        if (not i) :
+            continue
+        print "INFO: copying '%s'" % str(i)
+	#
+	#   We no longer want people to pick up our c++ runtime, but we still
+	#   dist it in case someone needs it (running on a really old linux, for
+	#   example), so put in dist but in a subdir of libdir
+	#
+        targetdir = libdir
+        if stdppRE.match(i):
+	    targetdir = libdir + "/extra"
+
+	os.system("install -p %s %s" % (i, targetdir))
+	#
+	#   Remove any RPATH entry in the dso.  Otherwise this dso can pick up system
+	#   dsos on the installed system regardless of attemptes to override with
+        #   LD_LIBRARY_PATH
+        #
+	os.system ("chrpath -d %s" % targetdir + "/" + os.path.basename(i))
+
+# Local Variables:
+# mode: python
+# end:

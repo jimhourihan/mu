@@ -1,0 +1,141 @@
+#!/usr/bin/env python
+#
+#  Copyright (c) 2001, Tweak Films
+#  Copyright (c) 2008, Tweak Software
+# 
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions
+#  are met:
+#
+#     * Redistributions of source code must retain the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer.
+#
+#     * Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials
+#       provided with the distribution.
+#
+#     * Neither the name of the Tweak Software nor the names of its
+#       contributors may be used to endorse or promote products
+#       derived from this software without specific prior written
+#       permission.
+# 
+#  THIS SOFTWARE IS PROVIDED BY Tweak Software ''AS IS'' AND ANY EXPRESS
+#  OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+#  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED. IN NO EVENT SHALL Tweak Software BE LIABLE FOR
+#  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+#  OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+#  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+#  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+#  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+#  DAMAGE.
+#
+#
+#   NOTE: see also textunixify which is the same as this script, but takes
+#   a bunch of filenames on the command line instead of using git's status
+#   to find them.
+#
+import subprocess
+import sys
+import os
+import re
+#
+#   This script will clean up a number of cross platform issues related to
+#   windows. There are three big ones:
+#
+#   1) Windows apps tend to add a BOM (Byte Order Mark) to utf-8 encoded
+#      files eventhough that is clearly insane. This violates a bunch of
+#      unix principles and can lead to compilation failure on darwin and
+#      linux. (e.g. text files starting with shebang #! no longer work)
+#
+#   2) Windows uses CR (carriage return) followed by NL (new line) for text
+#      files. Unix doesn't really care about that, but git goes nuts trying
+#      to merge the white space.
+#
+#   3) (NOT DONE YET) New files on windows appear with executable
+#      permission by default either because of cygwin's handling of NTFS or
+#      because git is adding it. Either way source files should not be +x
+#
+
+srcroot   = os.getenv("SRC_ROOT")
+filterExt = ["cpp", "c", "y", "l", "glsl", "h", "hpp", "cc", "py", "mu"]
+filterRE  = [re.compile("^Makefile.*")]
+
+#
+#
+#
+
+def gitGetStatus ():
+    cmd = ["git", "status", "--porcelain", "-uno"]
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (pout, perr) = p.communicate()
+    return pout
+
+def fileFilter (filename):
+    f = open(filename, "rb")
+    buffer = ""
+    head = f.read(3)
+    bom = False
+
+    if len(head) == 3 and ord(head[0]) == 0xef and ord(head[1]) == 0xbb and ord(head[2]) == 0xbf:
+        print "INFO: removed BOM from", filename
+        bom = True
+    else:
+        buffer += head
+
+    # read the rest of the file
+    byte = f.read(1)
+    lfcount = 0
+    tabcount = 0
+
+    while byte:
+        val = ord(byte)
+        if val == 9:
+            tabcount = tabcount + 1
+        elif val == 13:
+            lfcount = lfcount + 1
+        else:
+            buffer += byte
+        byte = f.read(1)
+    f.close
+
+    if lfcount > 0:
+        print "INFO: removed %d CR characters from %s" % (lfcount, filename)
+
+    # write back to disk if needed
+    if bom or lfcount > 0:
+        f = open(filename, "wb")
+        f.write(buffer)
+        f.close()
+
+if srcroot == None:
+    print "ERROR: SRC_ROOT not set"
+    exit(256)
+
+repo = os.path.split(srcroot)[0]
+files = []
+
+for i in filterExt:
+    filterRE.append(re.compile(".*\\." + i))
+
+for line in gitGetStatus().split("\n"):
+    if line != "":
+        parts = line.split()
+        s = parts[0]
+        p = parts[-1]
+        if s != "D":
+            filename = os.path.join(repo, p)
+            matches = False
+
+            for r in filterRE:
+                if re.match(r, filename):
+                    files.append(filename)
+
+for filename in files:
+    fileFilter(filename)
+
+exit(0)
