@@ -111,8 +111,6 @@ class RuntimeModule : public Module
     static NODE_DECLARATION(symbol_overloaded_symbols, Pointer);
     static NODE_DECLARATION(cast_to_symbol, Pointer);
 
-    static NODE_DECLARATION(type_from_symbol, Pointer);
-
     static NODE_DECLARATION(function_from_symbol, Pointer);
     static NODE_DECLARATION(function_type, Pointer);
     static NODE_DECLARATION(function_signature, Pointer);
@@ -123,17 +121,26 @@ class RuntimeModule : public Module
     static NODE_DECLARATION(parameter_from_symbol, Pointer);
     static NODE_DECLARATION(parameter_default_value_as_string, Pointer);
 
+    static NODE_DECLARATION(type_from_symbol, Pointer);
     static NODE_DECLARATION(type_is_union, bool);
     static NODE_DECLARATION(type_is_union_tag, bool);
     static NODE_DECLARATION(type_is_reference_type, bool);
     static NODE_DECLARATION(type_is_class, bool);
     static NODE_DECLARATION(type_is_interface, bool);
     static NODE_DECLARATION(type_is_opaque, bool);
-
     static NODE_DECLARATION(type_structure_info, Pointer);
 
     static NODE_DECLARATION(symbolic_constant_from_symbol, Pointer);
     static NODE_DECLARATION(symbolic_constant_value_as_string, Pointer);
+    static NODE_DECLARATION(module_from_symbol, Pointer);
+    static NODE_DECLARATION(module_location, Pointer);
+
+    static NODE_DECLARATION(make_tuple_type, Pointer);
+    static NODE_DECLARATION(make_function_type, Pointer);
+    static NODE_DECLARATION(make_list_type, Pointer);
+    static NODE_DECLARATION(make_fixed_array_type, Pointer);
+    static NODE_DECLARATION(make_dynamic_array_type, Pointer);
+    static NODE_DECLARATION(make_modified_type, Pointer);
 };
 
 } // namespace Mu

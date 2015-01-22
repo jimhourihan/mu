@@ -198,14 +198,14 @@ MuLangContext::MuLangContext(const char *imp, const char *name)
 
     s->addSymbol( _mathModule = new MathModule(this) );
     s->addSymbol( _mathUtilModule = new MathUtilModule(this) );
+    s->addSymbol( _runtimeModule = new RuntimeModule(this, "runtime") );
 
-    RuntimeModule* rtm = new RuntimeModule(this, "runtime");
-    s->addSymbol(rtm);
-
-    _nameType           = rtm->findSymbolOfType<OpaqueType>(internName("name"));
-    _symbolType         = rtm->findSymbolOfType<OpaqueType>(internName("symbol"));
-    _typeSymbolType     = rtm->findSymbolOfType<OpaqueType>(internName("type_symbol"));
-    _functionSymbolType = rtm->findSymbolOfType<OpaqueType>(internName("function_symbol"));
+    _nameType           = _runtimeModule->findSymbolOfType<OpaqueType>(internName("name"));
+    _symbolType         = _runtimeModule->findSymbolOfType<OpaqueType>(internName("symbol"));
+    _typeSymbolType     = _runtimeModule->findSymbolOfType<OpaqueType>(internName("type_symbol"));
+    _moduleSymbolType   = _runtimeModule->findSymbolOfType<OpaqueType>(internName("module_symbol"));
+    _functionSymbolType = _runtimeModule->findSymbolOfType<OpaqueType>(internName("function_symbol"));
+    _parameterSymbolType= _runtimeModule->findSymbolOfType<OpaqueType>(internName("parameter_symbol"));
 }
 
 MuLangContext::~MuLangContext() {}

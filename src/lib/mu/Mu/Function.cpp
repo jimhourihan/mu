@@ -34,6 +34,7 @@
 //  DAMAGE.
 //
 
+#include <Mu/BaseFunctions.h>
 #include <Mu/Context.h>
 #include <Mu/Context.h>
 #include <Mu/FreeVariable.h>
@@ -394,7 +395,7 @@ Function::func(Node*) const
 {
     if (isDynamicActivation())
     {
-        return returnType()->machineRep()->dynamicActivationFunc();
+        return BaseFunctions::dynamicActivation;
     }
     else if (_code || !_native)
     {
@@ -404,7 +405,7 @@ Function::func(Node*) const
 	//  return type should be known ahead of time, so this should work.
 	//
 
-	return returnType()->machineRep()->functionActivationFunc();
+	return BaseFunctions::functionActivation;
     }
     else
     {
@@ -898,7 +899,7 @@ purity(const Function* self, const Node* n)
         //  pure.
         //
 
-        if (n->func() == n->type()->machineRep()->referenceMemberFunc())
+        if (n->func() == BaseFunctions::referenceMember)
         {
             return Function::None;
         }

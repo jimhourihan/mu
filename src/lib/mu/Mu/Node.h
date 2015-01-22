@@ -58,12 +58,13 @@ class Thread;
 //  rewriting the code.
 //
 
-#define NODE_DECLARAION(NAME,TYPE) TYPE NAME(const Mu::Node&,Mu::Thread&)
-#define NODE_DECLARATION(NAME,TYPE) TYPE NAME(const Mu::Node&,Mu::Thread&)
+#ifdef MU_DEPRECATED_MACROS
+#define NODE_DECLARAION(NAME,TYPE) void NAME(const Mu::Node&,Mu::Thread&,TYPE*)
+#define NODE_DECLARATION(NAME,TYPE) void NAME(const Mu::Node&,Mu::Thread&,TYPE*)
 #define NODE_THIS node_
 #define NODE_THREAD thread_
 #define NODE_IMPLEMENTATION(NAME,TYPE) \
-        TYPE NAME(const Mu::Node& NODE_THIS, Mu::Thread& NODE_THREAD)
+    void NAME(const Mu::Node& NODE_THIS, Mu::Thread& NODE_THREAD, TYPE* ret_)
 #define NODE_EVAL() (NODE_THIS.eval(NODE_THREAD))
 #define NODE_DATA(X) (static_cast<const Mu::DataNode&>(NODE_THIS)._data.as<X>())
 //#define NODE_DATA(X) (static_cast<const Mu::DataNode&>(NODE_THIS)._data._ ## X)
@@ -74,6 +75,66 @@ class Thread;
 #define NODE_ARG_OBJECT(N,T) (Mu::evalNodeFunc<T*>(NODE_THIS.argNode(N)->func(), *NODE_THIS.argNode(N), NODE_THREAD))
 #define NODE_RETURN(X) return X
 #define NODE_ANY_TYPE_ARG(N) NODE_EVAL_VALUE(NODE_THIS.argNode(N), NODE_THREAD)
+#endif
+
+//
+//  New style macros for declaring interpreted nodes
+//
+//  Examples:
+// 
+//  MU_NODE_IMPLEMENTATION(f_plus_s, int)
+//  {
+//      MU_NODE_DECLARE_ARG(float, arg0, 0);
+//      MU_NODE_DECLARE_ARG(StringType::String*, arg1, 1);
+//      MU_NODE_RETURN(atof(arg1->c_str()) + arg0);
+//  }
+//
+//      -or-
+//
+//  MU_NODE_IMPLEMENTATION(f_plus_s, int)
+//  {
+//      float arg0;
+//      StringType::String* arg1;
+//      MU_NODE_SET_ARG(arg0, 0);
+//      MU_NODE_SET_ARG(arg1, 1);
+//      MU_NODE_RETURN(atof(arg1->c_str()) + arg0);
+//  }
+//
+//  In which case arg0 will be of type float and arg1 will be a StringType::String*
+//
+
+#define MU_NODE_THIS node_
+#define MU_NODE_THREAD thread_
+#define MU_NODE_RLOC ret_
+
+#define MU_NODE_DECLARATION(NAME,TYPE) void NAME(const Mu::Node&,Mu::Thread&,TYPE*)
+#define MU_NODE_GENERIC_DECLARATION(NAME) void NAME(const Mu::Node&,Mu::Thread&,Pointer)
+#define MU_NODE_IMPLEMENTATION(NAME,TYPE) \
+    void NAME(const Mu::Node& MU_NODE_THIS, Mu::Thread& MU_NODE_THREAD, TYPE* MU_NODE_RLOC)
+#define MU_NODE_GENERIC_IMPLEMENTATION(NAME) \
+    void NAME(const Mu::Node& MU_NODE_THIS, Mu::Thread& MU_NODE_THREAD, Pointer MU_NODE_RLOC)
+
+#define MU_NODE_NUM_ARGS (MU_NODE_THIS.numArgs())
+
+#define MU_NODE_DECLARE_ARG(T,V,N) \
+    T V; (*MU_NODE_THIS.argNode(N)->func())(*MU_NODE_THIS.argNode(N), MU_NODE_THREAD, &V)
+
+#define MU_NODE_DECLARE_TYPE_ARG(T,V,N) \
+    Mu::ValuePointer V = (Mu::ValuePointer)alloca(T->size()); \
+    (*MU_NODE_THIS.argNode(N)->func())(*MU_NODE_THIS.argNode(N), MU_NODE_THREAD, V)
+
+#define MU_NODE_SET_ARG(V,N) \
+    (*MU_NODE_THIS.argNode(N)->func())(*MU_NODE_THIS.argNode(N), MU_NODE_THREAD, &V)
+
+#define MU_NODE_SET_RETURN(V) \
+    (*MU_NODE_RLOC) = V
+
+#define MU_NODE_DATA(X) (static_cast<const Mu::DataNode&>(X).value())
+
+#define MU_NODE_RETURN(X) MU_NODE_SET_RETURN(X); return
+#define MU_NODE_EVAL_VALUE(P,N,T) ((N)->type()->nodeEval((P),(N),(T)))
+#define MU_NODE_ANY_TYPE_ARG(N) { Value v; MU_NODE_EVAL_VALUE(addressOf(v), MU_NODE_THIS.argNode(N), MU_NODE_THREAD); }
+
 
 //
 //  class Node
@@ -101,16 +162,6 @@ class Node
     void  deleteSelf();
 
     //
-    //	Evaluate this node. Returns the result as a Value
-    //
-
-#ifdef MU_FUNCTION_UNION
-    const Value   	eval(Thread &t) const;
-#else
-    const Value   	eval(Thread &t) const { return (*_func)(*this,t); }
-#endif
-
-    //
     //	Evaluate and return the i'th argument's Value
     //
 
@@ -120,33 +171,11 @@ class Node
     Node**              argv() const { return _argv; }
     void                releaseArgv() { _argv = 0; }
 
-#ifdef MU_FUNCTION_UNION
-    Value		valueArg(int i, Thread &t) const
-			{ return (*_argv[i]->_func._valueFunc)(*_argv[i],t); }
-    float		floatArg(int i, Thread &t) const
-			{ return (*_argv[i]->_func._floatFunc)(*_argv[i],t); }
-    int			intArg(int i, Thread &t) const
-			{ return (*_argv[i]->_func._intFunc)(*_argv[i],t); }
-    short		shortArg(int i, Thread &t) const
-			{ return (*_argv[i]->_func._shortFunc)(*_argv[i],t); }
-    char		charArg(int i, Thread &t) const
-			{ return (*_argv[i]->_func._charFunc)(*_argv[i],t); }
-    bool		boolArg(int i, Thread &t) const
-			{ return (*_argv[i]->_func._boolFunc)(*_argv[i],t); }
-    Vector4f		Vector4fArg(int i, Thread &t) const
-			{ return (*_argv[i]->_func._Vector4fFunc)(*_argv[i],t);}
-    Vector3f		Vector3fArg(int i, Thread &t) const
-			{ return (*_argv[i]->_func._Vector3fFunc)(*_argv[i],t);}
-    Vector2f		Vector2fArg(int i, Thread &t) const
-			{ return (*_argv[i]->_func._Vector2fFunc)(*_argv[i],t);}
-    Pointer		PointerArg(int i, Thread &t) const
-			{ return (*_argv[i]->_func._PointerFunc)(*_argv[i],t); }
-    void   		voidArg(int i, Thread &t) const
-			{ (*_argv[i]->_func._voidFunc)(*_argv[i],t); }
-#else
-    const Value 	arg(int i, Thread &t) const
-			{ return (*_argv[i]->_func)(*_argv[i],t); }
-#endif
+    void                eval(Thread& t, ValuePointer p) const
+                        { (*_func)(*this,t,p); }
+
+    void                evalArg(int i, Thread &t, ValuePointer p) const
+                        { _argv[i]->eval(t, p); }
 
     //
     //	The Type of the Node's return Value
@@ -255,6 +284,18 @@ class DataNode : public Node
     //
 
     Value		_data;
+};
+
+template <class T>
+class TypedDataNode : public Node
+{
+  public:
+    TypedDataNode() : Node(), _value() {}
+    TypedDataNode(int numArgs, NodeFunc func, const Symbol *symbol) : Node(numArgs,func,symbol), _value()  {}
+    TypedDataNode(Node** args, const Symbol* s) : Node(args,s), _value()  {}
+    ~TypedDataNode() {}
+
+    T _value;
 };
 
 } // namespace Mu

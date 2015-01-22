@@ -438,7 +438,9 @@ class Context
 
     const Type*         symbolType() const { return _symbolType; }
     const Type*         typeSymbolType() const { return _typeSymbolType; }
+    const Type*         moduleSymbolType() const { return _typeSymbolType; }
     const Type*         functionSymbolType() const { return _functionSymbolType; }
+    const Type*         parameterSymbolType() const { return _parameterSymbolType; }
 
     const Function*     noop() const { return _noop; }
     const Function*     simpleBlock() const { return _simpleBlock; }
@@ -550,7 +552,9 @@ class Context
     Type*                       _unresolvedType;
     Type*                       _symbolType;
     Type*                       _typeSymbolType;
+    Type*                       _moduleSymbolType;
     Type*                       _functionSymbolType;
+    Type*                       _parameterSymbolType;
 
     SymbolDefinitionMap         _symbolDefinitionMap;
     NodeDefinitionMap           _nodeDefinitionMap;

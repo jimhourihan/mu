@@ -66,12 +66,12 @@ class Function : public Symbol
     //  on all architectures.
     //
 
-    typedef APIAllocatable::STLVector<Value>::Type ArgumentVector;
-    typedef STLVector<const Type*>::Type           TypeVector;
-    typedef STLVector<String>::Type                StringVector;
-    typedef STLVector<ParameterVariable*>::Type    ParamList;
-    typedef unsigned int                           Attributes;
-    typedef const size_t                           ArgKeyword; 
+    typedef APIAllocatable::STLVector<Value>::Type        ArgumentVector;
+    typedef STLVector<const Type*>::Type                  TypeVector;
+    typedef STLVector<String>::Type                       StringVector;
+    typedef STLVector<ParameterVariable*>::Type           ParamList;
+    typedef unsigned int                                  Attributes;
+    typedef const size_t                                  ArgKeyword; 
 
     typedef void (*CompiledFunction);
 

@@ -1,4 +1,6 @@
 .gdb_history
+/.emacs.desktop
+/.emacs.desktop.lock
 /ClassInstance.cpp.~master~
 /NodeAssembler.cpp.~master~
 /VariantTagType.cpp.~master~

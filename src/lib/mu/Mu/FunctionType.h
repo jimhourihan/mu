@@ -65,7 +65,6 @@ class FunctionType : public Class
     virtual void        reconstitute(Archive::Reader&, Object*) const;
 
     virtual Object*	newObject() const;
-    virtual Value	nodeEval(const Node*,Thread &t) const;
     virtual void 	nodeEval(void*, const Node*,Thread &t) const;
     virtual void	deleteObject(Object*) const;
 
@@ -91,14 +90,14 @@ class FunctionType : public Class
     MatchResult         match(const Type*, Bindings&) const;
 
   private:
-    static NODE_DECLARATION(dereference, Pointer);
-    static NODE_DECLARATION(disambiguate, Pointer);
-    static NODE_DECLARATION(ambiguate, Pointer);
-    static NODE_DECLARATION(assign, Pointer);
-    static NODE_DECLARATION(eq, bool);
-    static NODE_DECLARATION(print, void);
+    static MU_NODE_DECLARATION(dereference, Pointer);
+    static MU_NODE_DECLARATION(disambiguate, Pointer);
+    static MU_NODE_DECLARATION(ambiguate, Pointer);
+    static MU_NODE_DECLARATION(assign, Pointer);
+    static MU_NODE_DECLARATION(eq, bool);
+    static MU_NODE_DECLARATION(print, void);
 
-    static NODE_DECLARATION(call, void);
+    static MU_NODE_DECLARATION(call, void);
 
   private:
     const Signature*    _signature;

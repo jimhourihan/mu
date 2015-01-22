@@ -40,8 +40,6 @@
 #include <Mu/Function.h>
 #include <Mu/FunctionObject.h>
 #include <Mu/FunctionType.h>
-#include <Mu/MachineRep.h>
-#include <Mu/MachineRep.h>
 #include <Mu/Module.h>
 #include <Mu/NodePrinter.h>
 #include <Mu/Process.h>
@@ -82,12 +80,6 @@ Object*
 FunctionType::newObject() const
 {
     return new FunctionObject(this);
-}
-
-Value	
-FunctionType::nodeEval(const Node* n, Thread& thread) const
-{
-    return Value((*n->func()._PointerFunc)(*n,thread));
 }
 
 void 
@@ -213,7 +205,6 @@ FunctionType::load()
     size_t size = signature() ? signature()->size() : 0;
     STLVector<String>::Type args(size);
     String rt = "void";
-    const MachineRep* rep = 0;
 
     if (signature() && signature()->size())
     {

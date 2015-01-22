@@ -96,10 +96,8 @@ MemberVariable::nodeReturnType(const Node* n) const
 {
     if (const Type *t = dynamic_cast<const Type*>(n->symbol()->scope()))
     {
-	const MachineRep* rep = t->machineRep();
-
-	if (n->func() == rep->referenceMemberFunc() ||
-	    n->func() == rep->referenceClassMemberFunc())
+	if (n->func() == BaseFunctions::referenceMember ||
+	    n->func() == BaseFunctions::referenceClassMember)
 	{
 	    return storageClass()->referenceType();
 	}

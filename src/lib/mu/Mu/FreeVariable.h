@@ -54,12 +54,12 @@ class FreeVariable :public ParameterVariable
     FreeVariable(Context*,
                  const char *name, 
                  const Type *storageClass, 
-                 const Value& defaultValue);
+                 const ValuePointer defaultValue);
 
     FreeVariable(Context*,
                  const char *name, 
                  const char *storageClass, 
-                 const Value& defaultValue);
+                 const ValuePointer defaultValue);
 
     virtual ~FreeVariable();
 

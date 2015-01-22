@@ -1,5 +1,5 @@
-#ifndef __Mu__Construct__h__
-#define __Mu__Construct__h__
+#ifndef __MuLang__MuLangParse__h__
+#define __MuLang__MuLangParse__h__
 //
 //  Copyright (c) 2009, Jim Hourihan
 //  All rights reserved.
@@ -35,34 +35,23 @@
 //  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 //  DAMAGE.
 //
-#include <Mu/Function.h>
+#include <Mu/Module.h>
+#include <Mu/Process.h>
+#include <Mu/Value.h>
+#include <MuLang/MuLangContext.h>
+#include <MuLang/MuLangLanguage.h>
+#include <vector>
 
-namespace Mu {
+namespace Mu { 
+class NodeAssembler; 
+class Module;
 
 //
-//  class Construct
-//
-//  A special type of function that evaluates some of its arguments
-//  conditionally and/or repeatedly. 
+//  Returns 0 on failure.
 //
 
-class Construct : public Function
-{
-  public:
-    Construct(Context* context, const char* name, NodeFunc, Attributes attributes, ...); 
-    virtual ~Construct();
-
-    //
-    //	Symbol API
-    //
-	
-    virtual void	    output(std::ostream&) const;
-
-  protected:
-    Construct(Context*, const char* name);
-};
-
+Process* GLRParse(const char *fileName, NodeAssembler*);
 
 } // namespace Mu
 
-#endif // __Mu__Construct__h__
+#endif // __MuLang__MuLangParse__h__

@@ -219,10 +219,6 @@ FloatRep::~FloatRep()
     _rep = 0;
 }
 
-ValuePointer FloatRep::valuePointer(Value& v) const { return ValuePointer(&v._float); }
-const ValuePointer FloatRep::valuePointer(const Value& v) const { return ValuePointer(&v._float); }
-Value FloatRep::value(ValuePointer p) const { return Value(*reinterpret_cast<float*>(p)); }
-
 #define MACHINEFUNCS(CLASS,TYPE)                                        \
 NODE_IMPLEMENTATION(CLASS::referenceStack,Pointer)                      \
 {                                                                       \
@@ -564,10 +560,6 @@ DoubleRep::~DoubleRep()
     _rep = 0;
 }
 
-ValuePointer DoubleRep::valuePointer(Value& v) const { return &v._double; }
-const ValuePointer DoubleRep::valuePointer(const Value& v) const { return ValuePointer(&v._double); }
-Value DoubleRep::value(ValuePointer p) const { return Value(*reinterpret_cast<double*>(p)); }
-
 ACTIVATIONFUNCS(DoubleRep,double)
 DYNACTIVATIONFUNCS(DoubleRep,double)
 FRAMEBLOCK(DoubleRep,double)
@@ -610,10 +602,6 @@ IntRep::~IntRep()
 {
     _rep = 0;
 }
-
-ValuePointer IntRep::valuePointer(Value& v) const { return &v._int; }
-const ValuePointer IntRep::valuePointer(const Value& v) const { return ValuePointer(&v._int); }
-Value IntRep::value(ValuePointer p) const { return Value(*reinterpret_cast<int*>(p)); }
 
 MACHINEFUNCS(IntRep,int)
 FRAMEBLOCK(IntRep,int)
@@ -659,10 +647,6 @@ Int64Rep::~Int64Rep()
     _rep = 0;
 }
 
-ValuePointer Int64Rep::valuePointer(Value& v) const { return &v._int64; }
-const ValuePointer Int64Rep::valuePointer(const Value& v) const { return ValuePointer(&v._int64); }
-Value Int64Rep::value(ValuePointer p) const { return Value(*reinterpret_cast<int64*>(p)); }
-
 MACHINEFUNCS(Int64Rep,int64)
 FRAMEBLOCK(Int64Rep,int64)
 METHODFUNCS(Int64Rep,int64)
@@ -705,10 +689,6 @@ ShortRep::~ShortRep()
 {
     _rep = 0;
 }
-
-ValuePointer ShortRep::valuePointer(Value& v) const { return &v._short; }
-const ValuePointer ShortRep::valuePointer(const Value& v) const { return ValuePointer(&v._short); }
-Value ShortRep::value(ValuePointer p) const { return Value(*reinterpret_cast<short*>(p)); }
 
 MACHINEFUNCS(ShortRep,short)
 FRAMEBLOCK(ShortRep,short)
@@ -754,10 +734,6 @@ CharRep::~CharRep()
     _rep = 0;
 }
 
-ValuePointer CharRep::valuePointer(Value& v) const { return &v._char; }
-const ValuePointer CharRep::valuePointer(const Value& v) const { return ValuePointer(&v._char); }
-Value CharRep::value(ValuePointer p) const { return Value(*reinterpret_cast<char*>(p)); }
-
 MACHINEFUNCS(CharRep,char)
 FRAMEBLOCK(CharRep,char)
 METHODFUNCS(CharRep,char)
@@ -802,10 +778,6 @@ BoolRep::~BoolRep()
 {
     _rep = 0;
 }
-
-ValuePointer BoolRep::valuePointer(Value& v) const { return &v._bool; }
-const ValuePointer BoolRep::valuePointer(const Value& v) const { return ValuePointer(&v._bool); }
-Value BoolRep::value(ValuePointer p) const { return Value(*reinterpret_cast<bool*>(p)); }
 
 MACHINEFUNCS(BoolRep,bool)
 FRAMEBLOCK(BoolRep,bool)
@@ -857,11 +829,6 @@ PointerRep::~PointerRep()
 {
     _rep = 0;
 }
-
-ValuePointer PointerRep::valuePointer(Value& v) const { return &v._Pointer; }
-const ValuePointer PointerRep::valuePointer(const Value& v) const { return ValuePointer(&v._Pointer); }
-Value PointerRep::value(ValuePointer p) const { return Value(*reinterpret_cast<Pointer*>(p)); }
-
 
 MACHINEFUNCS(PointerRep,Pointer)
 FRAMEBLOCK(PointerRep,Pointer)
@@ -926,10 +893,6 @@ Vector4FloatRep::~Vector4FloatRep()
 {
     _rep = 0;
 }
-
-ValuePointer Vector4FloatRep::valuePointer(Value& v) const { return ValuePointer(&v._Vector4f); }
-const ValuePointer Vector4FloatRep::valuePointer(const Value& v) const { return ValuePointer(&v._Vector4f); }
-Value Vector4FloatRep::value(ValuePointer p) const { return Value(*reinterpret_cast<Vector4f*>(p)); }
 
 MACHINEFUNCS(Vector4FloatRep,Vector4f)
 FRAMEBLOCK(Vector4FloatRep,Vector4f)
@@ -1002,10 +965,6 @@ Vector3FloatRep::~Vector3FloatRep()
     _rep = 0;
 }
 
-ValuePointer Vector3FloatRep::valuePointer(Value& v) const { return &v._Vector3f; }
-const ValuePointer Vector3FloatRep::valuePointer(const Value& v) const { return ValuePointer(&v._Vector3f); }
-Value Vector3FloatRep::value(ValuePointer p) const { return Value(*reinterpret_cast<Vector3f*>(p)); }
-
 MACHINEFUNCS(Vector3FloatRep,Vector3f)
 FRAMEBLOCK(Vector3FloatRep,Vector3f)
 METHODFUNCS(Vector3FloatRep,Vector3f)
@@ -1077,10 +1036,6 @@ Vector2FloatRep::~Vector2FloatRep()
     _rep = 0;
 }
 
-ValuePointer Vector2FloatRep::valuePointer(Value& v) const { return &v._Vector2f; }
-const ValuePointer Vector2FloatRep::valuePointer(const Value& v) const { return ValuePointer(&v._Vector2f); }
-Value Vector2FloatRep::value(ValuePointer p) const { return Value(*reinterpret_cast<Vector2f*>(p)); }
-
 MACHINEFUNCS(Vector2FloatRep,Vector2f)
 FRAMEBLOCK(Vector2FloatRep,Vector2f)
 METHODFUNCS(Vector2FloatRep,Vector2f)
@@ -1138,10 +1093,6 @@ VoidRep::VoidRep() : MachineRep("void", "v")
     _unpackVariantFunc      = VoidRep::unpackVariant;
     _rep 	      	    = this;
 }
-
-ValuePointer VoidRep::valuePointer(Value& v) const { return 0; }
-const ValuePointer VoidRep::valuePointer(const Value& v) const { return 0; }
-Value VoidRep::value(ValuePointer p) const { return Value(); }
 
 VoidRep::~VoidRep()
 {

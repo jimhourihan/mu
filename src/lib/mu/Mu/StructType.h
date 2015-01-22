@@ -62,8 +62,8 @@ class StructType : public Class
 
     virtual void load();
 
-    static NODE_DECLARATION(defaultConstructor, Pointer);
-    static NODE_DECLARATION(aggregateConstructor, Pointer);
+    static MU_NODE_DECLARATION(defaultConstructor, Pointer);
+    static MU_NODE_DECLARATION(aggregateConstructor, Pointer);
 
     const NameValuePairs& fields() const { return _fields; }
 

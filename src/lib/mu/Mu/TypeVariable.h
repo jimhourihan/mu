@@ -72,7 +72,6 @@ public:
     virtual Value       nodeEval(const Node*,Thread &t) const;
     virtual void        nodeEval(void*, const Node*,Thread &t) const;
     virtual const Type*	nodeReturnType(const Node*) const;
-    virtual void        outputValue(std::ostream&,Value&) const;
     virtual MatchResult match(const Type*, Bindings&) const;
 };
 

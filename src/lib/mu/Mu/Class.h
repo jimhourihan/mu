@@ -78,14 +78,13 @@ class Class : public Type
     //	Symbol + Type API
     //
 
-    virtual Value	    nodeEval(const Node*, Thread&) const;
     virtual void	    nodeEval(void *, const Node*, Thread&) const;
 
     virtual Object*         newObject() const;
     virtual size_t          objectSize() const;
     virtual void            deleteObject(Object*) const;
 
-    virtual void            outputValue(std::ostream&, const Value&, bool full=false) const;
+    virtual void            outputValue(std::ostream&, const ValuePointer, bool full=false) const;
     virtual void            outputValueRecursive(std::ostream&, const ValuePointer, ValueOutputState&) const;
     virtual void            symbolDependancies(ConstSymbolVector&) const;
 

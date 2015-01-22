@@ -1,7 +1,7 @@
 //
 //  Copyright (c) 2009, Jim Hourihan
 //  All rights reserved.
-// 
+//
 //  Redistribution and use in source and binary forms, with or without
 //  modification, are permitted provided that the following conditions
 //  are met:
@@ -19,7 +19,7 @@
 //       contributors may be used to endorse or promote products
 //       derived from this software without specific prior written
 //       permission.
-// 
+//
 //  THIS SOFTWARE IS PROVIDED BY Jim Hourihan ''AS IS'' AND ANY EXPRESS
 //  OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 //  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -64,10 +64,10 @@
 namespace Mu {
 using namespace std;
 
-NoOp::NoOp(Context* context, const char *name) : 
+NoOp::NoOp(Context* context, const char *name) :
     Function(context, name, NoOp::node, Function::Pure,
-	     Function::Return, "void", 
-	     Function::End)
+             Function::Return, "void",
+             Function::End)
 {
 }
 
@@ -80,12 +80,12 @@ NODE_IMPLEMENTATION(NoOp::node,void)
 
 SimpleBlock::SimpleBlock(Context* context, const char *name)
     : Function(context,
-               name, NodeFunc(0), 
-	       Function::ContextDependent,
-	       Function::Return, "void", 
-	       Function::Args, "?", Function::Optional, "?varargs",
-	       Function::Maximum, Function::MaxArgValue,
-	       Function::End)
+               name, NodeFunc(0),
+               Function::ContextDependent,
+               Function::Return, "void",
+               Function::Args, "?", Function::Optional, "?varargs",
+               Function::Maximum, Function::MaxArgValue,
+               Function::End)
 {
 }
 
@@ -102,13 +102,13 @@ SimpleBlock::func(Node *node) const
 {
     if (node)
     {
-	const Type *t = node->type();
-	const MachineRep *rep = t->machineRep();
-	return rep->simpleBlockFunc();
+        const Type *t = node->type();
+        const MachineRep *rep = t->machineRep();
+        return rep->simpleBlockFunc();
     }
     else
     {
-	return Function::func(node);
+        return Function::func(node);
     }
 }
 
@@ -116,12 +116,12 @@ SimpleBlock::func(Node *node) const
 
 FixedFrameBlock::FixedFrameBlock(Context* context, const char *name)
     : Function(context,
-               name, FixedFrameBlock::node, 
-	       Function::ContextDependent | Function::HiddenArgument,
-	       Function::Return, "void", 
-	       Function::Args, "?", Function::Optional, "?varargs",
-	       Function::Maximum, Function::MaxArgValue,
-	       Function::End)
+               name, FixedFrameBlock::node,
+               Function::ContextDependent | Function::HiddenArgument,
+               Function::Return, "void",
+               Function::Args, "?", Function::Optional, "?varargs",
+               Function::Maximum, Function::MaxArgValue,
+               Function::End)
 {
 }
 
@@ -130,13 +130,13 @@ FixedFrameBlock::func(Node *node) const
 {
     if (node)
     {
-	const Type *t = node->type();
-	const MachineRep *rep = t->machineRep();
-	return rep->frameBlockFunc();
+        const Type *t = node->type();
+        const MachineRep *rep = t->machineRep();
+        return rep->frameBlockFunc();
     }
     else
     {
-	return Function::func(node);
+        return Function::func(node);
     }
 }
 
@@ -147,25 +147,22 @@ FixedFrameBlock::nodeReturnType(const Node *node) const
     return node->argNode(node->numArgs()-1)->type();
 }
 
-NODE_IMPLEMENTATION(FixedFrameBlock::node,void)
+MU_NODE_IMPLEMENTATION(FixedFrameBlock::node, void)
 {
     //
     //	Allocate local variable space
     //
 
-    Thread::StackRecord record(NODE_THREAD);
-    record.newStackFrame(NODE_DATA(int));
-        
+    Thread::StackRecord record(MU_NODE_THREAD);
+    record.newStackFrame(MU_NODE_DATA(int));
+
     //
     //	Evaluate frame statements. See simple block above for comments.
     //
 
-    const Node *n=NODE_THIS.argNode(0);
-
-    for (int i=1; n; i++)
+    for (int i=0; MU_NODE_THIS.argNode(i); i++)
     {
-	NODE_ANY_TYPE_ARG(i-1);
-	n = NODE_THIS.argNode(i);
+        MU_NODE_ANY_TYPE_ARG(i);
     }
 }
 
@@ -175,8 +172,8 @@ NODE_IMPLEMENTATION(FixedFrameBlock::node,void)
 
 DynamicCast::DynamicCast(Context* context, const char *name)
     : Function(context, name, DynamicCast::node, Function::Mapped,
-	       Function::Return, "?class_or_interface", 
-	       Function::Args, "?class_or_interface", "?class_or_interface", 
+               Function::Return, "?class_or_interface",
+               Function::Args, "?class_or_interface", "?class_or_interface",
                Function::End)
 {
 }
@@ -187,54 +184,58 @@ DynamicCast::nodeReturnType(const Node *n) const
     return dynamic_cast<const Type*>(n->argNode(0)->symbol());
 }
 
-NODE_IMPLEMENTATION(DynamicCast::node, Pointer)
+MU_NODE_IMPLEMENTATION(DynamicCast::node, Pointer)
 {
-    const Symbol* sym = NODE_THIS.argNode(0)->symbol();
+    const Symbol* sym = MU_NODE_THIS.argNode(0)->symbol();
 
     if (const Class* c0 = dynamic_cast<const Class*>(sym))
     {
-	if (ClassInstance* o = NODE_ARG_OBJECT(1, ClassInstance))
-	{
-	    if (const Class* c1 = dynamic_cast<const Class*>(o->type()))
-	    {
+        MU_NODE_DECLARE_ARG(ClassInstance*, o, 1);
+
+        if (o)
+        {
+            if (const Class* c1 = dynamic_cast<const Class*>(o->type()))
+            {
                 if (ClassInstance* dobj = c1->dynamicCast(o, c0, true))
                 {
-                    NODE_RETURN(dobj);
+                    MU_NODE_RETURN(dobj);
                 }
-		//if (c1->isA(c0)) NODE_RETURN((Pointer)o);
-	    }
-	}
-	else
-	{
-	    //
-	    //	Let nil pass through
-	    //
+                //if (c1->isA(c0)) NODE_RETURN((Pointer)o);
+            }
+        }
+        else
+        {
+            //
+            //	Let nil pass through
+            //
 
-	    NODE_RETURN((Pointer)o);
-	}
+            MU_NODE_RETURN((Pointer)o);
+        }
     }
     else if (const Interface* i = dynamic_cast<const Interface*>(sym))
     {
-	if (Object* o = reinterpret_cast<Object*>(NODE_ARG(1, Pointer)))
-	{
-	    if (const Class* c1 = dynamic_cast<const Class*>(o->type()))
-	    {
-		if (c1->implementation(i))
-		{
-		    NODE_RETURN((Pointer)o);
-		}
-	    }
-	}
-	else
-	{
-	    //
-	    //	Can't attempt to cast nil to an interface. Let it throw.
-	    //
+        MU_NODE_DECLARE_ARG(Object*, o, 1);
+
+        if (o)
+        {
+            if (const Class* c1 = dynamic_cast<const Class*>(o->type()))
+            {
+                if (c1->implementation(i))
+                {
+                    MU_NODE_RETURN((Pointer)o);
+                }
+            }
+        }
+        else
+        {
+            //
+            //	Can't attempt to cast nil to an interface. Let it throw.
+            //
 
             //  ALLOWING --NEEDS FIXING
 
-            NODE_RETURN(Pointer(0));
-	}
+            MU_NODE_RETURN(Pointer(0));
+        }
     }
 
     throw BadDynamicCastException(NODE_THREAD);
@@ -245,11 +246,11 @@ NODE_IMPLEMENTATION(DynamicCast::node, Pointer)
 DynamicActivation::DynamicActivation(Context* context,
                                      const String& returnType,
                                      const STLVector<String>::Type& args)
-    : Function(context, "()", NodeFunc(0), 
+    : Function(context, "()", NodeFunc(0),
                Function::DynamicActivation |
-                   Function::ContextDependent  | 
+                   Function::ContextDependent  |
                    Function::MaybePure,
-	       Function::Return, returnType.c_str(), 
+               Function::Return, returnType.c_str(),
                Function::ArgVector, &args)
 {
 }
@@ -259,23 +260,23 @@ DynamicActivation::func(Node *node) const
 {
     if (node)
     {
-	const Type *t;
+        const Type *t;
 
-	if (node->numArgs())
-	{
-	    t = ((const Node*)node)->argNode(0)->type();
-	}
-	else
-	{
-	    t = returnType();
-	}
+        if (node->numArgs())
+        {
+            t = ((const Node*)node)->argNode(0)->type();
+        }
+        else
+        {
+            t = returnType();
+        }
 
-	const MachineRep *rep = t->machineRep();
-	return rep->dynamicActivationFunc();
+        const MachineRep *rep = t->machineRep();
+        return rep->dynamicActivationFunc();
     }
     else
     {
-	return Function::func(node);
+        return Function::func(node);
     }
 }
 
@@ -284,17 +285,17 @@ DynamicActivation::func(Node *node) const
 
 
 ReturnFromFunction::ReturnFromFunction(Context* context, const char *name, bool arg)
-    : Function(context, name, NodeFunc(0), 
-	       Function::ContextDependent,
-	       Function::Return, (arg ? "?" : "void"), 
-	       Function::Args, (arg ? "?" : 0), Function::End)
+    : Function(context, name, NodeFunc(0),
+               Function::ContextDependent,
+               Function::Return, (arg ? "?" : "void"),
+               Function::Args, (arg ? "?" : 0), Function::End)
 {
 }
 
 const Type*
 ReturnFromFunction::nodeReturnType(const Node *n) const
 {
-    const ReturnFromFunction* R = 
+    const ReturnFromFunction* R =
         static_cast<const ReturnFromFunction*>(n->symbol());
 
     if (R->numArgs())
@@ -312,23 +313,23 @@ ReturnFromFunction::func(Node *node) const
 {
     if (node)
     {
-	const Type *t;
+        const Type *t;
 
-	if (node->numArgs())
-	{
-	    t = ((const Node*)node)->argNode(0)->type();
-	}
-	else
-	{
-	    t = returnType();
-	}
+        if (node->numArgs())
+        {
+            t = ((const Node*)node)->argNode(0)->type();
+        }
+        else
+        {
+            t = returnType();
+        }
 
-	const MachineRep *rep = t->machineRep();
-	return rep->functionReturnFunc();
+        const MachineRep *rep = t->machineRep();
+        return rep->functionReturnFunc();
     }
     else
     {
-	return Function::func(node);
+        return Function::func(node);
     }
 }
 
@@ -336,10 +337,10 @@ ReturnFromFunction::func(Node *node) const
 
 
 TailFuseReturn::TailFuseReturn(Context* context, const char *name)
-    : Function(context, name, NodeFunc(0), 
-	       Function::ContextDependent,
-	       Function::Return, ("?"), 
-	       Function::Args, "?",
+    : Function(context, name, NodeFunc(0),
+               Function::ContextDependent,
+               Function::Return, ("?"),
+               Function::Args, "?",
                Function::End)
 {
 }
@@ -355,13 +356,13 @@ TailFuseReturn::func(Node *node) const
 {
     if (node)
     {
-	const Type *t = ((const Node*)node)->argNode(0)->type();
-	const MachineRep *rep = t->machineRep();
-	return rep->functionTailFuseFunc();
+        const Type *t = ((const Node*)node)->argNode(0)->type();
+        const MachineRep *rep = t->machineRep();
+        return rep->functionTailFuseFunc();
     }
     else
     {
-	return Function::func(node);
+        return Function::func(node);
     }
 }
 
@@ -370,11 +371,11 @@ TailFuseReturn::func(Node *node) const
 
 Curry::Curry(Context* context, const char *name)
     : Function(context,
-               name, 
-               Curry::node, 
+               name,
+               Curry::node,
                Function::Pure,
-	       Function::Return, "?function", 
-	       Function::Args, "?function", "?function", "?bool_rep", "?varargs",
+               Function::Return, "?function",
+               Function::Args, "?function", "?function", "?bool_rep", "?varargs",
                Function::End)
 {
 }
@@ -442,27 +443,29 @@ Curry::evaluate(Thread& t,
     }
 }
 
-NODE_IMPLEMENTATION(Curry::node, Pointer)
+MU_NODE_IMPLEMENTATION(Curry::node, Pointer)
 {
-    Process*                 p = NODE_THREAD.process();
-    Context*                 c = p->context();
-    FunctionObject*          o = NODE_ARG_OBJECT(1, FunctionObject);
-    bool                     d = NODE_ARG(2, bool);
-    const Function*          F = o->function();
+    Process* p = MU_NODE_THREAD.process();
+    Context* c = p->context();
+
+    MU_NODE_DECLARE_ARG(FunctionObject*, o, 1);
+    MU_NODE_DECLARE_ARG(bool, d, 2);
+
+    const Function* F = o->function();
     Function::ArgumentVector args(F->numArgs() + F->numFreeVariables());
-    vector<bool>             mask(args.size());
+    vector<bool> mask(args.size());
 
     for (int i=0, s=args.size(); i < s; i++)
     {
-        mask[i] = NODE_THIS.argNode(i+3)->symbol() != c->noop();
+        mask[i] = MU_NODE_THIS.argNode(i+3)->symbol() != c->noop();
 
         if (mask[i])
         {
-            args[i] = NODE_ANY_TYPE_ARG(i+3);
+            args[i] = MU_NODE_ANY_TYPE_ARG(i+3);
         }
     }
 
-    NODE_RETURN(Pointer(evaluate(NODE_THREAD, o, args, mask, d)));
+    MU_NODE_RETURN(Pointer(evaluate(MU_NODE_THREAD, o, args, mask, d)));
 }
 
 //----------------------------------------------------------------------
@@ -470,11 +473,11 @@ NODE_IMPLEMENTATION(Curry::node, Pointer)
 
 DynamicPartialEvaluate::DynamicPartialEvaluate(Context* context, const char *name)
     : Function(context,
-               name, 
-               DynamicPartialEvaluate::node, 
+               name,
+               DynamicPartialEvaluate::node,
                Function::Pure,
-	       Function::Return, "?function", 
-	       Function::Args, "?function", "?function", "?varargs",
+               Function::Return, "?function",
+               Function::Args, "?function", "?function", "?varargs",
                Function::End)
 {
 }
@@ -487,41 +490,42 @@ DynamicPartialEvaluate::nodeReturnType(const Node* n) const
     return dynamic_cast<const Type*>(n->argNode(0)->symbol());
 }
 
-NODE_IMPLEMENTATION(DynamicPartialEvaluate::node, Pointer)
+MU_NODE_IMPLEMENTATION(DynamicPartialEvaluate::node, Pointer)
 {
     typedef FunctionSpecializer Generator;
 
-    FunctionObject* f = NODE_ARG_OBJECT(1, FunctionObject);
+    MU_NODE_DECLARE_ARG(FunctionObject*, f, 1);
+
     Generator::ArgumentVector args(f->function()->numArgs() +
                                    f->function()->numFreeVariables());
     Generator::ArgumentMask   mask(args.size());
-    Process* p = NODE_THREAD.process();
+    Process* p = MU_NODE_THREAD.process();
     Context* c = p->context();
 
     for (int i=0; i < args.size(); i++)
     {
-        mask[i] = NODE_THIS.argNode(i+2)->symbol() != c->noop();
+        mask[i] = MU_NODE_THIS.argNode(i+2)->symbol() != c->noop();
 
         if (mask[i])
         {
-            args[i] = NODE_ANY_TYPE_ARG(i+2);
+            args[i] = MU_NODE_ANY_TYPE_ARG(i+2);
         }
     }
 
     try
     {
-        Generator evaluator(f->function(), p, &NODE_THREAD);
+        Generator evaluator(f->function(), p, &MU_NODE_THREAD);
         evaluator.partiallyEvaluate(args, mask);
 
         const FunctionType* rt = evaluator.result()->type();
-        assert(rt == NODE_THIS.argNode(0)->type());
+        assert(rt == MU_NODE_THIS.argNode(0)->type());
         FunctionObject* o = new FunctionObject(rt);
         o->setFunction(evaluator.result());
-        NODE_RETURN(Pointer(o));
+        MU_NODE_RETURN(Pointer(o));
     }
     catch (Exception& e)
     {
-        ProgramException exc(NODE_THREAD);
+        ProgramException exc(MU_NODE_THREAD);
         exc.message() = e.message();
         exc.message() += " during partial evaluation of ";
         exc.message() += f->function()->name().c_str();
@@ -533,11 +537,11 @@ NODE_IMPLEMENTATION(DynamicPartialEvaluate::node, Pointer)
 
 DynamicPartialApplication::DynamicPartialApplication(Context* context, const char *name)
     : Function(context,
-               name, 
-               DynamicPartialApplication::node, 
+               name,
+               DynamicPartialApplication::node,
                Function::Pure,
-	       Function::Return, "?function", 
-	       Function::Args, "?function", "?function", "?varargs",
+               Function::Return, "?function",
+               Function::Args, "?function", "?function", "?varargs",
                Function::End)
 {
 }
@@ -550,7 +554,7 @@ DynamicPartialApplication::nodeReturnType(const Node* n) const
     return dynamic_cast<const Type*>(n->argNode(0)->symbol());
 }
 
-NODE_IMPLEMENTATION(DynamicPartialApplication::node, Pointer)
+MU_NODE_IMPLEMENTATION(DynamicPartialApplication::node, Pointer)
 {
     //
     //  Never do partial application on the result of a lambda
@@ -561,9 +565,9 @@ NODE_IMPLEMENTATION(DynamicPartialApplication::node, Pointer)
     //  more overhead upfront.
     //
 
-    Process* p = NODE_THREAD.process();
+    Process* p = MU_NODE_THREAD.process();
     Context* c = p->context();
-    FunctionObject* f = NODE_ARG_OBJECT(1, FunctionObject);
+    MU_NODE_DECLARE_ARG(FunctionObject*, f, 1);
     bool apply = f->function()->isLambda();
 
     try
@@ -577,21 +581,21 @@ NODE_IMPLEMENTATION(DynamicPartialApplication::node, Pointer)
 
             for (int i=0; i < args.size(); i++)
             {
-                mask[i] = NODE_THIS.argNode(i+2)->symbol() != c->noop();
+                mask[i] = MU_NODE_THIS.argNode(i+2)->symbol() != c->noop();
                 if (mask[i])
                 {
-                    args[i] = NODE_ANY_TYPE_ARG(i+2);
+                    args[i] = MU_NODE_ANY_TYPE_ARG(i+2);
                 }
             }
 
-            Generator evaluator(f->function(), p, &NODE_THREAD, args, mask);
+            Generator evaluator(f->function(), p, &MU_NODE_THREAD, args, mask);
 
             const FunctionType* rt = evaluator.result()->type();
-            assert(rt == NODE_THIS.argNode(0)->type());
+            assert(rt == MU_NODE_THIS.argNode(0)->type());
             FunctionObject* o = new FunctionObject(rt);
             o->setDependent(f);
             o->setFunction(evaluator.result());
-            NODE_RETURN(Pointer(o));
+            MU_NODE_RETURN(Pointer(o));
         }
         else
         {
@@ -602,27 +606,27 @@ NODE_IMPLEMENTATION(DynamicPartialApplication::node, Pointer)
 
             for (int i=0; i < args.size(); i++)
             {
-                mask[i] = NODE_THIS.argNode(i+2)->symbol() != c->noop();
+                mask[i] = MU_NODE_THIS.argNode(i+2)->symbol() != c->noop();
 
                 if (mask[i])
                 {
-                    args[i] = NODE_ANY_TYPE_ARG(i+2);
+                    args[i] = MU_NODE_ANY_TYPE_ARG(i+2);
                 }
             }
 
-            Generator evaluator(f->function(), p, &NODE_THREAD);
+            Generator evaluator(f->function(), p, &MU_NODE_THREAD);
             evaluator.partiallyEvaluate(args, mask);
 
             const FunctionType* rt = evaluator.result()->type();
-            assert(rt == NODE_THIS.argNode(0)->type());
+            assert(rt == MU_NODE_THIS.argNode(0)->type());
             FunctionObject* o = new FunctionObject(rt);
             o->setFunction(evaluator.result());
-            NODE_RETURN(Pointer(o));
+            MU_NODE_RETURN(Pointer(o));
         }
     }
     catch (Exception& e)
     {
-        ProgramException exc(NODE_THREAD);
+        ProgramException exc(MU_NODE_THREAD);
         exc.message() = e.message();
         exc.message() += " during partial ";
         exc.message() += (apply ? "application" : "evaluation");
@@ -635,11 +639,11 @@ NODE_IMPLEMENTATION(DynamicPartialApplication::node, Pointer)
 //----------------------------------------------------------------------
 
 NonPrimitiveCondExr::NonPrimitiveCondExr(Context* context, const char *name)
-    : Function(context, name, 
-               NonPrimitiveCondExr::node, 
+    : Function(context, name,
+               NonPrimitiveCondExr::node,
                Function::Pure,
-	       Function::Return, "?non_primitive_or_nil", 
-	       Function::Args, "bool", "?non_primitive_or_nil", "?non_primitive_or_nil",
+               Function::Return, "?non_primitive_or_nil",
+               Function::Args, "bool", "?non_primitive_or_nil", "?non_primitive_or_nil",
                Function::End)
 {
 }
@@ -661,32 +665,44 @@ NonPrimitiveCondExr::nodeReturnType(const Node* n) const
     }
 }
 
-NODE_IMPLEMENTATION(NonPrimitiveCondExr::node, Pointer)
+MU_NODE_IMPLEMENTATION(NonPrimitiveCondExr::node, Pointer)
 {
-    NODE_RETURN(NODE_ARG(0, bool) ? NODE_ARG(1, Pointer) : NODE_ARG(2, Pointer));
+    MU_NODE_DECLARE_ARG(bool, b, 0);
+
+    if (b)
+    {
+        MU_NODE_DECLARE_ARG(Pointer, p, 1);
+        MU_NODE_RETURN(p);
+    }
+    else
+    {
+        MU_NODE_DECLARE_ARG(Pointer, p, 2);
+        MU_NODE_RETURN(p);
+    }
 }
 
 //----------------------------------------------------------------------
 
 VariantMatch::VariantMatch(Context* context, const char *name)
     : Function(context, name, VariantMatch::node, Function::None,
-	       Function::Return, "void", 
-	       Function::Args, "?reference", "?", 
+               Function::Return, "void",
+               Function::Args, "?reference", "?",
                Function::Optional, "?varargs",
-	       Function::Maximum, Function::MaxArgValue,
+               Function::Maximum, Function::MaxArgValue,
                Function::End)
 {
 }
 
 VariantMatch::~VariantMatch() {}
 
-NODE_IMPLEMENTATION(VariantMatch::node, void)
+MU_NODE_IMPLEMENTATION(VariantMatch::node, void)
 {
     //
     //  Get result of assignment
     //
 
-    VariantInstance* i = *reinterpret_cast<VariantInstance**>(NODE_ARG(0, Pointer));
+    MU_NODE_DECLARE_ARG(Pointer, p, 0);
+    VariantInstance* i = *reinterpret_cast<VariantInstance**>(p);
 
     //
     //  Eval argument corresponding to tag
@@ -697,7 +713,7 @@ NODE_IMPLEMENTATION(VariantMatch::node, void)
         const VariantTagType* tt = i->tagType();
         size_t index = tt->index() + 1;
         if (index >= NODE_THIS.numArgs()) throw MissingMatchException(NODE_THREAD);
-        NODE_ANY_TYPE_ARG(index);
+        MU_NODE_ANY_TYPE_ARG(index);
     }
     else
     {
@@ -705,62 +721,70 @@ NODE_IMPLEMENTATION(VariantMatch::node, void)
     }
 }
 
-
 //----------------------------------------------------------------------
 
 namespace BaseFunctions {
 
-NODE_IMPLEMENTATION(dereference, Pointer)
+MU_NODE_IMPLEMENTATION(dereference, Pointer)
 {
-    Pointer* i = reinterpret_cast<Pointer*>(NODE_ARG(0,Pointer));
+    MU_NODE_DECLARE_ARG(Pointer, p, 0);
+    Pointer* i = reinterpret_cast<Pointer*>(p);
     NODE_RETURN(*i);
 }
 
-NODE_IMPLEMENTATION(assign, Pointer)
+MU_NODE_IMPLEMENTATION(assign, Pointer)
 {
-    Pointer* i = reinterpret_cast<Pointer*>(NODE_ARG(0,Pointer));
-    Pointer  o = NODE_ARG(1,Pointer);
+    MU_NODE_DECLARE_ARG(Pointer, p, 0);
+    MU_NODE_DECLARE_ARG(Pointer, o, 1);
+
+    Pointer* i = reinterpret_cast<Pointer*>(p);
     *i = o;
-    NODE_RETURN(Pointer(i));
+
+    MU_NODE_RETURN(Pointer(i));
 }
 
-NODE_IMPLEMENTATION(eq, bool)
+MU_NODE_IMPLEMENTATION(eq, bool)
 {
-    Pointer a = NODE_ARG(0,Pointer);
-    Pointer b = NODE_ARG(1,Pointer);
+    MU_NODE_DECLARE_ARG(Pointer, a, 0);
+    MU_NODE_DECLARE_ARG(Pointer, b, 0);
+
     NODE_RETURN(a == b);
 }
 
-NODE_IMPLEMENTATION(neq, bool)
+MU_NODE_IMPLEMENTATION(neq, bool)
 {
-    Pointer a = NODE_ARG(0,Pointer);
-    Pointer b = NODE_ARG(1,Pointer);
-    NODE_RETURN(a != b);
+    MU_NODE_DECLARE_ARG(Pointer, a, 0);
+    MU_NODE_DECLARE_ARG(Pointer, b, 0);
+
+    MU_NODE_RETURN(a != b);
 }
 
-NODE_IMPLEMENTATION(print, void)
+MU_NODE_IMPLEMENTATION(print, void)
 {
-    if (Object* obj = NODE_ARG_OBJECT(0, Object))
+    MU_NODE_DECLARE_ARG(Object*, obj, 0);
+
+    if (obj)
     {
         obj->type()->outputValue(cout, Value(obj));
     }
     else
     {
-	cout << "nil" << endl;
+        cout << "nil" << endl;
     }
 }
 
-NODE_IMPLEMENTATION(equals, bool)
+MU_NODE_IMPLEMENTATION(equals, bool)
 {
-    ClassInstance* a = NODE_ARG_OBJECT(0, ClassInstance);
-    ClassInstance* b = NODE_ARG_OBJECT(1, ClassInstance);
-    NODE_RETURN(a == b);
+    MU_NODE_DECLARE_ARG(ClassInstance*, a, 0);
+    MU_NODE_DECLARE_ARG(ClassInstance*, b, 0);
+
+    MU_NODE_RETURN(a == b);
 }
 
-NODE_IMPLEMENTATION(unresolved, void)
+MU_NODE_IMPLEMENTATION(unresolved, void)
 {
-    const ASTNode* astnode = static_cast<const ASTNode*>(&NODE_THIS);
-    const Context* c = NODE_THREAD.context();
+    const ASTNode* astnode = static_cast<const ASTNode*>(&MU_NODE_THIS);
+    const Context* c = MU_NODE_THREAD.context();
     Name n;
 
     if (const ASTName* nnode = dynamic_cast<const ASTName*>(astnode))
@@ -773,14 +797,14 @@ NODE_IMPLEMENTATION(unresolved, void)
     }
 
     ostringstream str;
-    str << " \"" << n.c_str() << "\"" 
+    str << " \"" << n.c_str() << "\""
         << " at " << astnode->sourceFileName().c_str()
         << ", line " << astnode->linenum()
         << ", char " << astnode->charnum();
 
     string s = str.str();
-    
-    if (NODE_THIS.symbol() == c->unresolvedCall())
+
+    if (MU_NODE_THIS.symbol() == c->unresolvedCall())
     {
         UnresolvedFunctionException exc(NODE_THREAD);
         exc.message() += s.c_str();
@@ -788,30 +812,263 @@ NODE_IMPLEMENTATION(unresolved, void)
     }
     else
     {
-        UnresolvedReferenceException exc(NODE_THREAD);
+        UnresolvedReferenceException exc(MU_NODE_THREAD);
         exc.message() += s.c_str();
         throw exc;
     }
 }
 
-NODE_IMPLEMENTATION(abstract, void)
+MU_NODE_IMPLEMENTATION(abstract, void)
 {
-    AbstractCallException exc(NODE_THREAD);
+    AbstractCallException exc(MU_NODE_THREAD);
     exc.message() += " \"";
-    exc.message() += NODE_THIS.symbol()->name().c_str();
+    exc.message() += MU_NODE_THIS.symbol()->name().c_str();
     exc.message() += "\"";
     throw exc;
 }
 
-NODE_IMPLEMENTATION(classAllocate, Pointer)
+MU_NODE_IMPLEMENTATION(classAllocate, Pointer)
 {
-    const Class* c = static_cast<const Class*>(NODE_THIS.symbol()->scope());
-    NODE_RETURN(ClassInstance::allocate(c));
+    const Class* c = static_cast<const Class*>(MU_NODE_THIS.symbol()->scope());
+    MU_NODE_RETURN(ClassInstance::allocate(c));
 }
 
-NODE_IMPLEMENTATION(objIdent, Pointer)
+MU_NODE_IMPLEMENTATION(objIdent, Pointer)
 {
-    NODE_RETURN((Pointer)NODE_ARG_OBJECT(0, Pointer));
+    MU_NODE_DECLARE_ARG(Pointer, p, 0);
+    NODE_RETURN(p);
+}
+
+MU_NODE_GENERIC_IMPLEMENTATION(constantAnySize)
+{
+    MU_NODE_THIS.type()->copy(MU_NODE_DATA(MU_NODE_THIS), MU_NODE_RLOC);
+}
+
+MU_NODE_IMPLEMENTATION(referenceStack, Pointer)
+{
+    const StackVariable* sv =
+        static_cast<const StackVariable*>(MU_NODE_THIS.symbol());
+
+    size_t index = sv->address() + MU_NODE_THREAD.stackOffset();
+    MU_NODE_RETURN(MU_NODE_THREAD.stack()[index].value());
+}
+
+MU_NODE_GENERIC_IMPLEMENTATION(dereferenceStack)
+{
+    const StackVariable* sv =
+        static_cast<const StackVariable*>(MU_NODE_THIS.symbol());
+
+    size_t index = sv->address() + MU_NODE_THREAD.stackOffset();
+    sv->type()->copy(MU_NODE_THREAD.stack()[index].value(), MU_NODE_RLOC);
+}
+
+MU_NODE_IMPLEMENTATION(referenceGlobal, Pointer)
+{
+    const GlobalVariable* sv =
+        static_cast<const GlobalVariable*>(MU_NODE_THIS.symbol());
+    Process *process = NODE_THREAD.process();
+    NODE_RETURN(process->globals()[gv->address()].value());
+}
+
+MU_NODE_GENERIC_IMPLEMENTATION(dereferenceStack)
+{
+    const GlobalVariable* sv =
+        static_cast<const GlobalVariable*>(MU_NODE_THIS.symbol());
+    Process *process = NODE_THREAD.process();
+    gv->type()->copy(process->globals()[gv->address()].value(), MU_NODE_RLOC);
+}
+
+MU_NODE_GENERIC_IMPLEMENTATION(callMethod)
+{
+    const MemberFunction *f =
+        static_cast<const MemberFunction*>(MU_NODE_THIS.symbol());
+    MU_NODE_DECLARE_ARG(ClassInstance*, i, 0);
+    if (!i) throw NilArgumentException(NODE_THREAD);
+    const MemberFunction* F = i->classType()->dynamicLookup(f);
+    TYPE t;
+
+    size_t nargs = NODE_THIS.numArgs();
+    LOCAL_ARRAY(argv, const Node*, nargs+1);
+    TypedDataNode<Pointer> dn(0, PointerRep::rep()->constantFunc(), i->type());
+    //DataNode dn(0, PointerRep::rep()->constantFunc(), i->type());
+    //dn._data._Pointer = i;
+    dn._value = i;
+    argv[0] = &dn;
+    argv[nargs] = 0;
+    for (size_t i = 1; i < nargs; i++) argv[i] = MU_NODE_THIS.argNode(i);
+    Node n((Node**)argv, F);
+
+    try
+    {
+        n->eval(MU_NODE_THREAD, MU_NODE_RLOC);
+    }
+    catch (...)
+    {
+        n.releaseArgv();
+        throw;
+    }
+
+    n.releaseArgv();
+}
+
+MU_NODE_GENERIC_IMPLEMENTATION(dereferenceClassMember)
+{
+    const MemberVariable* v =
+        static_cast<const MemberVariable*>(MU_NODE_THIS.symbol());
+    MU_NODE_DECLARE_ARG(ClassInstance*, i, 0);
+    if (!i) throw NilArgumentException(NODE_THREAD);
+    size_t offset = v->instanceOffset();
+    Pointer p = i->structure() + offset;
+    v->type()->copy(p, MU_NODE_RLOC);
+}
+
+MU_NODE_GENERIC_IMPLEMENTATION(unpackVariant)
+{
+    MU_NODE_DECLARE_ARG(VariantInstance*, i, 0);
+    NODE_RETURN(*(i->data<TYPE>()));
+}
+
+MU_NODE_IMPLEMENTATION(variantConstructor, Pointer)
+{
+    const VariantTagType* c =
+        static_cast<const VariantTagType*>(MU_NODE_THIS.symbol()->scope());
+    VariantInstance* i = VariantInstance::allocate(c);
+    MU_NODE_THIS.argNode(0)->eval(MU_NODE_THREAD, i->data<void>());
+    MU_NODE_RETURN(i);
+}
+
+MU_NODE_GENERIC_IMPLEMENTATION(frameBlock)
+{
+    Thread::StackRecord record(MU_NODE_THREAD);
+    record.newStackFrame(MU_NODE_DATA(int));
+    int n = MU_NODE_NUM_ARGS() - 1;
+
+    for (int i=0; i < n; i++) MU_NODE_ANY_TYPE_ARG(i);
+    MU_NODE_THIS.argNode(n)->eval(MU_NODE_THREAD, MU_NODE_RLOC);
+}
+
+MU_NODE_GENERIC_IMPLEMENTATION(simpleBlock)
+{
+    int n = MU_NODE_NUM_ARGS() - 1;
+    for (int i=0; i < n; i++) MU_NODE_ANY_TYPE_ARG(i);
+    MU_NODE_THIS.argNode(n)->eval(MU_NODE_THREAD, MU_NODE_RLOC);
+}
+
+MU_NODE_GENERIC_IMPLEMENTATION(patternBlock)
+{
+    Thread::JumpRecord record(MU_NODE_THREAD, JumpReturnCode::PatternFail);
+    int rv = SETJMP(MU_NODE_THREAD.jumpPoint());
+
+    switch (rv)
+    {
+      case JumpReturnCode::PatternFail:
+          MU_NODE_THREAD.jumpPointRestore();
+          throw PatternFailedException();
+          break;
+
+      case JumpReturnCode::NoJump:
+          {
+              int n = MU_NODE_NUM_ARGS() - 1;
+              for (int i=0; i < n; i++) MU_NODE_ANY_TYPE_ARG(i);
+              MU_NODE_THIS.argNode(n)->eval(MU_NODE_THREAD, MU_NODE_RLOC);
+              break;
+          }
+    };
+}
+
+MU_NODE_GENERIC_IMPLEMENTATION(functionActivationFunc)
+{
+    const Function *f = static_cast<const Function*>(MU_NODE_THIS.symbol());
+    int n = MU_NODE_NUM_ARGS();
+    int s = f->stackSize();
+    Thread::StackRecord record(MU_NODE_THREAD);
+    record.beginActivation(s);
+
+    for (int i=0; i < s; i++)
+    {
+        if (i < n)
+        {
+            MU_NODE_EVAL_VALUE(record.parameterValue(i),
+                               NODE_THIS.argNode(i),
+                               NODE_THREAD);
+        }
+        else
+        {
+            Value val;
+            zero(val);
+            record.setParameter(i, val);
+        }
+    }
+
+    record.endParameters();
+
+    const Node *body = f->body();
+    if (!body) throw UnimplementedMethodException(NODE_THREAD);
+
+    if (NodeFunc func = body->func())
+    {
+        NODE_THREAD.jumpPointBegin(JumpReturnCode::Return |
+                                   JumpReturnCode::TailFuse);
+        int rv = SETJMP(NODE_THREAD.jumpPoint());
+
+        if (rv == JumpReturnCode::NoJump)
+        {
+            (*func)(*body, NODE_THREAD, MU_NODE_RLOC);
+        }
+        else
+        {
+            NODE_THREAD.jumpPointRestore();
+            v->type()->copy(p, MU_NODE_RLOC);
+        }
+
+        NODE_THREAD.jumpPointEnd();
+    }
+    else
+    {
+        throw NilNodeFuncException(NODE_THREAD);
+    }
+}
+
+MU_NODE_GENERIC_IMPLEMENTATION(dynamicActivation)
+{
+    if (FunctionObject* fobj = MU_NODE_ARG_OBJECT(0, FunctionObject))
+    {
+        if (const Function* f = fobj->function())
+        {
+            Node node(NODE_THIS.argv() + 1, f);
+            NodeFunc nf = f->func(&node);
+            TYPE p;
+
+            try
+            {
+                p = (*nf._  ## TYPE ## Func)(node, NODE_THREAD);
+            }
+            catch (...)
+            {
+                node.releaseArgv();
+                throw;
+            }
+
+            node.releaseArgv();
+            NODE_RETURN(p);
+        }
+        else
+        {
+            throw NilArgumentException(NODE_THREAD);
+        }
+    }
+    else
+    {
+        throw NilArgumentException(NODE_THREAD);
+    }
+}
+
+MU_NODE_GENERIC_IMPLEMENTATION(referenceMember)
+{
+    const MemberVariable* v =
+	static_cast<const MemberVariable*>(MU_NODE_THIS.symbol());
+    Vector4f *vp = reinterpret_cast<Vector4f*>(NODE_ARG(0,Pointer));
+    NODE_RETURN( (Pointer)&(*vp)[v->address()] );
 }
 
 } // namespace BaseFunctions
@@ -820,7 +1077,7 @@ NODE_IMPLEMENTATION(objIdent, Pointer)
 AssignAsReference::AssignAsReference(Context* c) :
     Function(c, "=", BaseFunctions::assign,
              Function::None,
-             Function::Return, "?", 
+             Function::Return, "?",
              Function::Args, "?non_primitive_reference", "?non_primitive_or_nil",
              Function::End)
 {
@@ -838,7 +1095,7 @@ AssignAsReference::nodeReturnType(const Node* n) const
 PatternTest::PatternTest(Context* c) :
     Function(c, "__pattern_test", PatternTest::node,
              Function::None,
-             Function::Return, c->boolType()->fullyQualifiedName().c_str(), 
+             Function::Return, c->boolType()->fullyQualifiedName().c_str(),
              Function::Args, "?",
              Function::Optional, "?",
              Function::End)
@@ -847,33 +1104,34 @@ PatternTest::PatternTest(Context* c) :
 
 PatternTest::~PatternTest() {}
 
-NODE_IMPLEMENTATION(PatternTest::node, bool)
+MU_NODE_IMPLEMENTATION(PatternTest::node, bool)
 {
-    Thread::JumpRecord record(NODE_THREAD, JumpReturnCode::PatternFail);
-    int rv = SETJMP(NODE_THREAD.jumpPoint());
+    Thread::JumpRecord record(MU_NODE_THREAD, JumpReturnCode::PatternFail);
+    int rv = SETJMP(MU_NODE_THREAD.jumpPoint());
     bool b = false;
 
     switch (rv)
     {
       case JumpReturnCode::PatternFail:
-          NODE_THREAD.jumpPointRestore();
+          MU_NODE_THREAD.jumpPointRestore();
           break;
 
       case JumpReturnCode::NoJump:
-          if (NODE_THIS.numArgs() == 1)
+          if (MU_NODE_THIS.numArgs() == 1)
           {
-              NODE_ANY_TYPE_ARG(0);
+              MU_NODE_ANY_TYPE_ARG(0);
           }
           else
           {
-              if (NODE_THIS.argNode(0)->type() == NODE_THIS.type())
+              if (MU_NODE_THIS.argNode(0)->type() == MU_NODE_THIS.type())
               {
-                  if (b = NODE_ARG(0, bool)) NODE_ANY_TYPE_ARG(1);
+                  MU_NODE_DECLARE_ARG(bool, b, 0);
+                  if (b) MU_NODE_ANY_TYPE_ARG(1);
               }
               else
               {
-                  NODE_ANY_TYPE_ARG(0);
-                  NODE_ANY_TYPE_ARG(1);
+                  MU_NODE_ANY_TYPE_ARG(0);
+                  MU_NODE_ANY_TYPE_ARG(1);
                   b = true;
               }
           }
@@ -883,13 +1141,13 @@ NODE_IMPLEMENTATION(PatternTest::node, bool)
           abort();
     }
 
-    NODE_RETURN(b);
+    MU_NODE_RETURN(b);
 }
 
 BoolPatternTest::BoolPatternTest(Context* c) :
     Function(c, "__bool_pattern_test", BoolPatternTest::node,
              Function::None,
-             Function::Return, c->boolType()->fullyQualifiedName().c_str(), 
+             Function::Return, c->boolType()->fullyQualifiedName().c_str(),
              Function::Args, "?",
              Function::Optional, "?",
              Function::End)
@@ -898,22 +1156,24 @@ BoolPatternTest::BoolPatternTest(Context* c) :
 
 BoolPatternTest::~BoolPatternTest() {}
 
-NODE_IMPLEMENTATION(BoolPatternTest::node, bool)
+MU_NODE_IMPLEMENTATION(BoolPatternTest::node, bool)
 {
-    if (!NODE_ARG(0, bool))
+    MU_NODE_DECLARE_ARG(bool, b, 0);
+
+    if (!b)
     {
-        NODE_THREAD.jump(JumpReturnCode::PatternFail, 1);
+        MU_NODE_THREAD.jump(JumpReturnCode::PatternFail, 1);
     }
 
-    NODE_RETURN(true);
+    MU_NODE_RETURN(true);
 }
 
 
 CaseTest::CaseTest(Context* c) :
     Function(c, "__case_test", CaseTest::node,
              Function::None,
-             Function::Return, c->boolType()->fullyQualifiedName().c_str(), 
-             Function::Args, "?reference", "?", 
+             Function::Return, c->boolType()->fullyQualifiedName().c_str(),
+             Function::Args, "?reference", "?",
              Function::Optional, "?varargs",
              Function::Maximum, Function::MaxArgValue,
              Function::End)
@@ -922,27 +1182,29 @@ CaseTest::CaseTest(Context* c) :
 
 CaseTest::~CaseTest() {}
 
-NODE_IMPLEMENTATION(CaseTest::node, bool)
+MU_NODE_IMPLEMENTATION(CaseTest::node, bool)
 {
-    NODE_ANY_TYPE_ARG(0);
+    MU_NODE_ANY_TYPE_ARG(0);
 
-    for (size_t i = 1; NODE_THIS.argNode(i); i++) 
+    for (size_t i = 1; MU_NODE_THIS.argNode(i); i++)
     {
-        if (NODE_ARG(i, bool)) NODE_RETURN(true);
+        MU_NODE_DECLARE_ARG(bool, i, 0);
+
+        if (i) MU_NODE_RETURN(true);
     }
 
-    NODE_RETURN(false);
+    MU_NODE_RETURN(false);
 }
 //----------------------------------------------------------------------
 
 PatternBlock::PatternBlock(Context* context, const char *name)
     : Function(context,
-               name, NodeFunc(0), 
-	       Function::ContextDependent,
-	       Function::Return, "void", 
-	       Function::Args, "?", Function::Optional, "?varargs",
-	       Function::Maximum, Function::MaxArgValue,
-	       Function::End)
+               name, NodeFunc(0),
+               Function::ContextDependent,
+               Function::Return, "void",
+               Function::Args, "?", Function::Optional, "?varargs",
+               Function::Maximum, Function::MaxArgValue,
+               Function::End)
 {
 }
 
@@ -960,18 +1222,14 @@ PatternBlock::func(Node *node) const
 {
     if (node)
     {
-	const Type *t = node->type();
-	const MachineRep *rep = t->machineRep();
-	return rep->patternBlockFunc();
+        const Type *t = node->type();
+        const MachineRep *rep = t->machineRep();
+        return rep->patternBlockFunc();
     }
     else
     {
-	return Function::func(node);
+        return Function::func(node);
     }
 }
 
-
 } // namespace Mu
-
-
- 

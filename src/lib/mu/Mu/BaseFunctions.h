@@ -75,7 +75,7 @@ class NoOp : public Function
 {
   public:
     NoOp(Context* context, const char *name);
-    static NODE_DECLARATION(node,void);
+    static MU_NODE_DECLARATION(node,void);
 };
 
 
@@ -111,7 +111,7 @@ class FixedFrameBlock : public Function
     FixedFrameBlock(Context* context, const char* name);
     virtual NodeFunc func(Node* node=0) const;
     virtual const Type* nodeReturnType(const Node*) const;
-    static NODE_DECLARATION(node,void);
+    static MU_NODE_DECLARATION(node,void);
 };
 
 
@@ -128,7 +128,7 @@ class DynamicCast : public Function
   public:
     DynamicCast(Context* context, const char* name);
     virtual const Type*	nodeReturnType(const Node*) const;
-    static NODE_DECLARATION(node,Pointer);
+    static MU_NODE_DECLARATION(node,Pointer);
 };
 
 //
@@ -188,7 +188,7 @@ class Curry : public Function
     Curry(Context* context, const char* name);
     virtual ~Curry();
     virtual const Type*	nodeReturnType(const Node*) const;
-    static NODE_DECLARATION(node,Pointer);
+    static MU_NODE_DECLARATION(node,Pointer);
     static FunctionObject* evaluate(Thread&,
                                     FunctionObject*,
                                     const Function::ArgumentVector&,
@@ -203,7 +203,7 @@ class DynamicPartialApplication  : public Function
     DynamicPartialApplication(Context* context, const char* name);
     virtual ~DynamicPartialApplication();
     virtual const Type*	nodeReturnType(const Node*) const;
-    static NODE_DECLARATION(node,Pointer);
+    static MU_NODE_DECLARATION(node,Pointer);
 };
 
 
@@ -213,7 +213,7 @@ class DynamicPartialEvaluate  : public Function
     DynamicPartialEvaluate(Context* context, const char* name);
     virtual ~DynamicPartialEvaluate();
     virtual const Type*	nodeReturnType(const Node*) const;
-    static NODE_DECLARATION(node,Pointer);
+    static MU_NODE_DECLARATION(node,Pointer);
 };
 
 
@@ -227,7 +227,7 @@ class NonPrimitiveCondExr : public Function
     NonPrimitiveCondExr(Context* context, const char* name);
     virtual ~NonPrimitiveCondExr();
     virtual const Type*	nodeReturnType(const Node*) const;
-    static NODE_DECLARATION(node,Pointer);
+    static MU_NODE_DECLARATION(node,Pointer);
 };
 
 //
@@ -239,7 +239,7 @@ class VariantMatch : public Function
   public:
     VariantMatch(Context* context, const char* name);
     virtual ~VariantMatch();
-    static NODE_DECLARATION(node,void);
+    static MU_NODE_DECLARATION(node,void);
 
 };
 
@@ -265,7 +265,7 @@ class PatternTest : public Function
   public:
     PatternTest(Context*);
     virtual ~PatternTest();
-    static NODE_DECLARATION(node,bool);
+    static MU_NODE_DECLARATION(node,bool);
 };
 
 //
@@ -277,7 +277,7 @@ class BoolPatternTest : public Function
   public:
     BoolPatternTest(Context*);
     virtual ~BoolPatternTest();
-    static NODE_DECLARATION(node,bool);
+    static MU_NODE_DECLARATION(node,bool);
 };
 
 //
@@ -289,7 +289,7 @@ class CaseTest : public Function
   public:
     CaseTest(Context*);
     virtual ~CaseTest();
-    static NODE_DECLARATION(node, bool);
+    static MU_NODE_DECLARATION(node, bool);
 };
 
 //
@@ -312,16 +312,27 @@ class PatternBlock : public Function
 
 namespace BaseFunctions {
 
-NODE_DECLARATION(dereference, Pointer);
-NODE_DECLARATION(assign, Pointer);
-NODE_DECLARATION(eq, bool);
-NODE_DECLARATION(neq, bool);
-NODE_DECLARATION(print, void);
-NODE_DECLARATION(hash, int);
-NODE_DECLARATION(unresolved, void);
-NODE_DECLARATION(abstract, void);
-NODE_DECLARATION(classAllocate, Pointer);
-NODE_DECLARATION(objIdent, Pointer);
+MU_NODE_DECLARATION(dereference, Pointer);
+MU_NODE_DECLARATION(assign, Pointer);
+MU_NODE_DECLARATION(eq, bool);
+MU_NODE_DECLARATION(neq, bool);
+MU_NODE_DECLARATION(print, void);
+MU_NODE_DECLARATION(hash, int);
+MU_NODE_DECLARATION(unresolved, void);
+MU_NODE_DECLARATION(abstract, void);
+MU_NODE_DECLARATION(classAllocate, Pointer);
+MU_NODE_DECLARATION(objIdent, Pointer);
+MU_NODE_GENERIC_DECLARATION(constantAnySize);
+MU_NODE_DECLARATION(referenceStack, Pointer);
+MU_NODE_GENERIC_DECLARATION(dereferenceStack);
+MU_NODE_DECLARATION(referenceGlobal, Pointer);
+MU_NODE_GENERIC_DECLARATION(dereferenceGlobal);
+MU_NODE_GENERIC_DECLARATION(callMethod);
+MU_NODE_GENERIC_DECLARATION(dereferenceClassMember);
+MU_NODE_GENERIC_DECLARATION(referenceMember);
+MU_NODE_DECLARATION(variantConstructor, Pointer);
+MU_NODE_GENERIC_DECLARATION(dynamicActivation);
+MU_NODE_GENERIC_DECLARATION(functionActivation);
 
 } // namespace BaseFunctions
 } // namespace Mu

@@ -35,15 +35,18 @@
 //
 
 #include <Mu/PrimitiveType.h>
-#include <Mu/MachineRep.h>
 #include <iostream>
 
 namespace Mu {
 
 using namespace std;
 
-PrimitiveType::PrimitiveType(Context* context, const char *tname, const MachineRep *rep)
-    : Type(context,tname,rep) 
+PrimitiveType::PrimitiveType(Context* context,
+                             const char *tname,
+                             size_t size,
+                             size_t naturalAlignment,
+                             size_t structAlignment)
+    : Type(context,tname,size,naturalAlignment,structAlignment)
 {
     _isPrimitive = true;
     _isGCAtomic = true;
@@ -54,19 +57,19 @@ PrimitiveType::~PrimitiveType() {}
 size_t
 PrimitiveType::objectSize() const
 {
-    return machineRep()->size();
+    return size();
 }
 
 void
 PrimitiveType::constructInstance(Pointer p) const
 {
-    memset(p, 0, machineRep()->size());
+    memset(p, 0, size());
 }
 
 void
 PrimitiveType::copyInstance(Pointer a, Pointer b) const
 {
-    memcpy(b, a, machineRep()->size());
+    memcpy(b, a, size());
 }
 
 } // namespace Mu

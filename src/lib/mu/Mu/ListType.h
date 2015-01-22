@@ -71,20 +71,10 @@ public:
     virtual void outputValueRecursive(std::ostream&, const ValuePointer, ValueOutputState&) const;
     virtual void load();
 
-    static NODE_DECLARATION(construct_aggregate, Pointer);
-    static NODE_DECLARATION(cons, Pointer);
-    static NODE_DECLARATION(tail, Pointer);
-
-    static NODE_DECLARATION(head_int, int);
-    static NODE_DECLARATION(head_int64, int64);
-    static NODE_DECLARATION(head_float, float);
-    static NODE_DECLARATION(head_bool, bool);
-    static NODE_DECLARATION(head_char, char);
-    static NODE_DECLARATION(head_short, short);
-    static NODE_DECLARATION(head_Pointer, Pointer);
-    static NODE_DECLARATION(head_Vector4f, Vector4f);
-    static NODE_DECLARATION(head_Vector3f, Vector3f);
-    static NODE_DECLARATION(head_Vector2f, Vector2f);
+    static MU_NODE_DECLARATION(construct_aggregate, Pointer);
+    static MU_NODE_DECLARATION(cons, Pointer);
+    static MU_NODE_DECLARATION(tail, Pointer);
+    static MU_NODE_GENERIC_DECLARATION(head);
 
   private:
     const Type* _elementType;

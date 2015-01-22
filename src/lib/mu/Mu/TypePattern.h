@@ -59,10 +59,8 @@ class TypePattern : public Type
     TypePattern(Context* context, const char *tname);
 
     virtual Object*     newObject() const;
-    virtual Value       nodeEval(const Node*,Thread &t) const;
     virtual void        nodeEval(void*, const Node*,Thread &t) const;
     virtual const Type*	nodeReturnType(const Node*) const;
-    virtual void        outputValue(std::ostream&,Value&) const;
     virtual void        argumentAdjust(int &in,int &func) const;
 
     bool variadic() const { return _variadic; }

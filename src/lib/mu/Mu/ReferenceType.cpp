@@ -45,7 +45,7 @@ namespace Mu {
 using namespace std;
 
 ReferenceType::ReferenceType(Context* context, const char *typeName, Type *type)
-    : Type(context,typeName,PointerRep::rep())
+    : Type(context, typeName)
 {
     assert(type->_referenceType == 0);
     type->_referenceType = this;
@@ -67,9 +67,9 @@ ReferenceType::load()
 }
 
 Value 
-ReferenceType::nodeEval(const Node *n, Thread &thread) const
+ReferenceType::nodeEval(void* lval, const Node *n, Thread &thread) const
 {
-    return Value((*n->func()._PointerFunc)(*n,thread));
+    (*n->func()._PointerFunc)(*n,thread,lval);
 }
 
 void

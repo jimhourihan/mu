@@ -34,6 +34,7 @@
 //  DAMAGE.
 //
 
+#include <Mu/Alias.h>
 #include <Mu/ASTNode.h>
 #include <Mu/BaseFunctions.h>
 #include <Mu/Class.h>
@@ -66,6 +67,7 @@
 #include <Mu/Thread.h>
 #include <Mu/TupleType.h>
 #include <Mu/Type.h>
+#include <Mu/TypeModifier.h>
 #include <Mu/TypePattern.h>
 #include <Mu/TypeVariable.h>
 #include <Mu/Unresolved.h>
@@ -549,12 +551,30 @@ NodeAssembler::prefixScope(const Symbol* symbol)
 bool
 NodeAssembler::isConstant(Node* n) const
 {
+    if (!n) return false;
+
     if (const Symbol* s = n->symbol())
     {
         if (dynamic_cast<const Type*>(s))
         {
             return true;
         }
+    }
+
+    return false;
+}
+
+bool
+NodeAssembler::isSymbolExpression(Node* n) const
+{
+    if (!n) return false;
+
+    if (const Type* type = n->type())
+    {
+        return type == context()->typeSymbolType() ||
+               type == context()->moduleSymbolType() ||
+               type == context()->functionSymbolType() ||
+               type == context()->symbolType();
     }
 
     return false;
@@ -1074,9 +1094,8 @@ NodeAssembler::assignmentOperator(const char *op, Node *node1, Node *node2)
             //
             //  Can this happen?
             //
-            freportError("illegal assignment from \"%s\" to \"%s\" in this context.",
-                         node2->type()->fullyQualifiedName().c_str(),
-                         node1->type()->fullyQualifiedName().c_str());
+            freportError("illegal assignment from \"%s\" to unknown in this context.",
+                         node2->type()->fullyQualifiedName().c_str());
 
         }
     }
@@ -2620,6 +2639,183 @@ NodeAssembler::endStackFrame(NodeList nl)
     {
         return n;
     }
+}
+
+void
+NodeAssembler::findSymbolsInScope(Name n, SymbolVector& array) const
+{
+    if (prefixScope())
+    {
+        if (Symbol *s = prefixScope()->findSymbol(n))
+        {
+            array.push_back(s);
+        }
+    }
+    else
+    {
+        for (const ScopeState* ss = _scope; ss; ss = ss->parent)
+        {
+            if (Symbol *s = ss->symbol->findSymbol(n))
+            {
+                array.push_back(s);
+            }
+        }
+    }
+}
+
+const Symbol*
+NodeAssembler::findSymbolInScope(Name n) const
+{
+    Symbol*           symbol    = 0;
+    Module*           module    = 0;
+    Type*             type      = 0;
+    SymbolicConstant* constant  = 0;
+    TypeModifier*     typemod   = 0;
+    Alias*            alias     = 0;
+    MemberVariable*   mvar      = 0;
+    GlobalVariable*   gvar      = 0;
+    Construct*        construct = 0;
+
+    if (prefixScope())
+    {
+        if (Symbol *s = prefixScope()->findSymbol(n))
+        {
+            module    = 0;
+            type      = 0;
+            alias     = 0;
+            mvar      = 0;
+            constant  = 0;
+
+            for (Symbol *sym = s->firstOverload();
+                 sym; 
+                 sym = sym->nextOverload())
+            {
+                if (!type)
+                {
+                    if (type = dynamic_cast<Type*>(sym)) continue;
+                }
+			
+                if (!module)
+                {
+                    if (module = dynamic_cast<Module*>(sym)) continue;
+                }
+
+                if (!mvar)
+                {
+                    if (mvar = dynamic_cast<MemberVariable*>(sym)) continue;
+                }
+
+                if (!alias)
+                {
+                    if (alias = dynamic_cast<Alias*>(sym)) continue;
+                }
+
+                if (!constant)
+                {
+                    if (constant = 
+                        dynamic_cast<SymbolicConstant*>(sym)) continue;
+                }
+            }
+
+            if (type) return type;
+            if (module) return module;
+            if (mvar) return mvar;
+            if (constant) return constant;
+            if (alias) return alias;
+            return s;
+        }
+    }
+
+    for (const ScopeState* ss = _scope; ss; ss = ss->parent)
+    {
+        if (Symbol *s = ss->symbol->findSymbol(n))
+        {
+            module    = 0;
+            type      = 0;
+            alias     = 0;
+            construct = 0;
+            typemod   = 0;
+            constant  = 0;
+
+            for (Symbol *sym = s->firstOverload();
+                 sym; 
+                 sym = sym->nextOverload())
+            {
+                if (!type)
+                {
+                    if (type = dynamic_cast<Type*>(sym)) continue;
+                }
+                
+                if (!typemod)
+                {
+                    if (typemod = dynamic_cast<TypeModifier*>(sym)) continue;
+                }
+                
+                if (!module)
+                {
+                    if (module = dynamic_cast<Module*>(sym)) continue;
+                }
+                
+                if (!constant)
+                {
+                    if (constant = 
+                        dynamic_cast<SymbolicConstant*>(sym)) continue;
+                }
+                
+                if (!alias)
+                {
+                    if (alias = dynamic_cast<Alias*>(sym)) continue;
+                }
+
+                if (!construct)
+                {
+                    if (construct = dynamic_cast<Construct*>(sym)) continue;
+                }
+            }
+
+            if (type) return type;
+            if (typemod) return typemod;
+            if (module) return module;
+            if (constant) return constant;
+            if (construct) return construct;
+            
+            //
+            //  Symbol found. 
+            //
+
+            if (Variable *v =
+                dynamic_cast<Variable*>(s))
+            {
+                return s;
+            }
+            
+            if (alias)
+            {
+                return alias;
+            }
+            else
+            {
+                if (Function* f = dynamic_cast<Function*>(s))
+                {
+                    if (f->scope()->name() == f->name())
+                    {
+                        if (Type* t = dynamic_cast<Type*>(f->scope()))
+                        {
+                            //
+                            //  Constructor: return the type instead
+                            //
+                            
+                            return t;
+                        }
+                    }
+                }
+		
+                return s;
+            }
+        }
+    }
+
+    return 0;
 }
 
 Name
@@ -4509,6 +4705,89 @@ NodeAssembler::addChar(int i)
 { 
     _char += i; 
     context()->setSourceChar(_char);
+}
+
+Node* 
+NodeAssembler::conditionalExpression(Node* pred, Node* expr0, Node* expr1)
+{
+    NodeList nl = newNodeList(pred);
+    bool failed = false;
+
+    if (expr0->type() != context()->nilType())
+    {
+        if (Node* c = cast(expr1, expr0->type()))
+        {
+            nl.push_back(expr0);
+            nl.push_back(c);
+        }
+        else
+        {
+            failed = true;
+        }
+    }
+    else if (expr1->type() != context()->nilType())
+    {
+        if (Node* c = cast(expr0, expr1->type()))
+        {
+            nl.push_back(c);
+            nl.push_back(expr1);
+        }
+        else
+        {
+            failed = true;
+        }
+    }
+    else
+    {
+        nl.push_back(expr0);
+        nl.push_back(expr1);
+    }
+
+    if (failed)
+    {
+        freportError("if-then-else: illegal type conversion (%s and %s)",
+                     expr0->type()->fullyQualifiedName().c_str(),
+                     expr1->type()->fullyQualifiedName().c_str());
+        return 0;
+    }
+    else
+    {
+        return callBestFunction("?:", nl);
+    }
+    
+    removeNodeList(nl);
+}
+
+Node*
+NodeAssembler::functionSymbolConstant(const Function* t)
+{
+    DataNode *node = constant(context()->functionSymbolType(), 0);
+    node->_data._Pointer = Pointer(t);
+    return node;
+}
+
+Node*
+NodeAssembler::typeSymbolConstant(const Type* t)
+{
+    DataNode *node = constant(context()->typeSymbolType(), 0);
+    node->_data._Pointer = Pointer(t);
+    return node;
+}
+
+Node*
+NodeAssembler::moduleSymbolConstant(const Module* t)
+{
+    DataNode *node = constant(context()->moduleSymbolType(), 0);
+    node->_data._Pointer = Pointer(t);
+    return node;
+}
+
+Node*
+NodeAssembler::paramSymbolConstant(const ParameterVariable* p)
+{
+    DataNode *node = constant(context()->parameterSymbolType(), 0);
+    node->_data._Pointer = Pointer(p);
+    return node;
 }
 
 } // namespace Mu

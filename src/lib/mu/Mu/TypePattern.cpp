@@ -56,7 +56,7 @@ namespace Mu {
 using namespace std;
 
 TypePattern::TypePattern(Context* context, const char *tname) 
-    : Type(context,tname,VoidRep::rep()),
+    : Type(context,tname),
       _variadic(false)
 {
     _isTypePattern  = true;
@@ -68,11 +68,6 @@ TypePattern::newObject() const
     return 0; 
 }
 
-void 
-TypePattern::outputValue(std::ostream& o, Value& value) const
-{
-    o << "\"" << name() << "\" is a type pattern";
-}
 
 void 
 TypePattern::argumentAdjust(int& index, int& funcIndex) const
@@ -88,22 +83,10 @@ TypePattern::argumentAdjust(int& index, int& funcIndex) const
     return;
 }
 
-Value
-TypePattern::nodeEval(const Node* n, Thread &t) const
-{
-    //
-    //  An exception *should* be thrown by whatever function is called
-    //  here.
-    //
-
-    (*n->func()._voidFunc)(*n, t);
-    return Value(); 
-}
-
 void
-TypePattern::nodeEval(void*, const Node*,Thread &t) const
+TypePattern::nodeEval(void* p, const Node* node, Thread &thread) const
 {
-    return;
+    (*node->func())(*node, thread, p);
 }
 
 const Type*
@@ -372,7 +355,9 @@ MatchList::match(const Type *other, Bindings&) const
 Type::MatchResult
 MatchABoolRep::match(const Type *other, Bindings&) const
 {
-    return other->machineRep() == BoolRep::rep() ? Match : NoMatch;
+    //return other->machineRep() == BoolRep::rep() ? Match : NoMatch;
+    abort();
+    return NoMatch;
 }
 
 

@@ -64,14 +64,12 @@ class Interface : public Type
     //  Symbol/Type API
     //
 
-    virtual Value	    nodeEval(const Node*, Thread&) const;
     virtual void	    nodeEval(void *, const Node*, Thread&) const;
 
     virtual Object*         newObject() const;
     virtual void            deleteObject(Object*) const;
     virtual void            output(std::ostream&) const;
     virtual void            outputNode(std::ostream&,const Node*) const;
-    virtual void            outputValue(std::ostream&,const Value&, bool full=false) const;
     virtual void            outputValueRecursive(std::ostream&, const ValuePointer, ValueOutputState&) const;
 
     //

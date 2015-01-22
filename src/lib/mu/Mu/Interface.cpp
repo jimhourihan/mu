@@ -38,21 +38,20 @@
 #include <Mu/Function.h>
 #include <Mu/Interface.h>
 #include <Mu/InterfaceImp.h>
-#include <Mu/MachineRep.h>
 #include <Mu/SymbolTable.h>
 
 namespace Mu {
 using namespace std;
 
 Interface::Interface(Context* context, const char* name)
-    : Type(context, name, Mu::PointerRep::rep()),
+    : Type(context, name),
       _numFunctions(0)
 {
 }
 
 
 Interface::Interface(Context* context, const char* name, const Interfaces& interfaces)
-    : Type(context, name, Mu::PointerRep::rep()),
+    : Type(context, name),
       _numFunctions(0)
 {
 }
@@ -91,12 +90,6 @@ Interface::outputNode(std::ostream &o, const Node *n) const
     outputValue(o,dn->_data);
 }
 
-void
-Interface::outputValue(std::ostream &o, const Value &value, bool full) const
-{
-    ValueOutputState state(o, full);
-    outputValueRecursive(o, ValuePointer(&value._Pointer), state);
-}
 
 void
 Interface::outputValueRecursive(std::ostream& o,
@@ -113,12 +106,6 @@ Interface::outputValueRecursive(std::ostream& o,
     {
         o << "nil";
     }
-}
-
-Value
-Interface::nodeEval(const Node* n, Thread& thread) const
-{
-    return Value((*n->func()._PointerFunc)(*n,thread));
 }
 
 void

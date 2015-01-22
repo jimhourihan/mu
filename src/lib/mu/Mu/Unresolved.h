@@ -56,7 +56,6 @@ class UnresolvedType : public Type
     virtual Object* newObject() const;
     virtual Value   nodeEval(const Node*,Thread &t) const;
     virtual void    nodeEval(void*, const Node*,Thread &t) const;
-    virtual void    outputValue(std::ostream&,Value&) const;
 };
 
 class UnresolvedCall : public UnresolvedSymbol

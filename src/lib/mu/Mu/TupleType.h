@@ -57,8 +57,8 @@ class TupleType : public Class
 
     const Types& tupleFieldTypes() const { return _types; }
 
-    static NODE_DECLARATION(defaultConstructor, Pointer);
-    static NODE_DECLARATION(aggregateConstructor, Pointer);
+    static MU_NODE_DECLARATION(defaultConstructor, Pointer);
+    static MU_NODE_DECLARATION(aggregateConstructor, Pointer);
 
   private:
     Types       _types;

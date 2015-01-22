@@ -38,7 +38,6 @@
 #include "List.h"
 #include <Mu/Function.h>
 #include <Mu/ReferenceType.h>
-#include <Mu/MachineRep.h>
 #include <Mu/BaseFunctions.h>
 #include <Mu/MemberVariable.h>
 #include <Mu/Process.h>
@@ -121,52 +120,6 @@ ListType::load()
     const char* ern = ername.c_str();
 
     const MachineRep *erep = elementType()->machineRep();
-    NodeFunc head;
-
-    if (erep == FloatRep::rep())
-    {
-	head = head_float;
-    }
-    else if (erep == IntRep::rep())
-    {
-	head = head_int;
-    }
-    else if (erep == Int64Rep::rep())
-    {
-	head = head_int64;
-    }
-    else if (erep == PointerRep::rep())
-    {
-	head = head_Pointer;
-    }
-    else if (erep == BoolRep::rep())
-    {
-	head = head_bool;
-    }
-    else if (erep == Vector3FloatRep::rep())
-    {
-	head = head_Vector3f;
-    }
-    else if (erep == Vector2FloatRep::rep())
-    {
-	head = head_Vector2f;
-    }
-    else if (erep == Vector4FloatRep::rep())
-    {
-	head = head_Vector4f;
-    }
-    else if (erep == CharRep::rep())
-    {
-	head = head_char;
-    }
-    else if (erep == ShortRep::rep())
-    {
-	head = head_short;
-    }
-    else
-    {
-	abort();
-    }
 
     //
     //  Dereference
@@ -186,12 +139,6 @@ ListType::load()
                                Args, en, Optional, "?+", Maximum, 999999,
                                Return, tn, End),
                   
-#if 0
-                  new Function(c, tn, ListType::copyconstruct, None,
-                               Return, tn,
-                               Args, tn, End),
-#endif
-                  
                   new Function(c, "=", BaseFunctions::assign,
                                Function::MemberOperator | Function::Operator,
                                Return, rn,
@@ -200,16 +147,6 @@ ListType::load()
                   new Function(c, "eq", BaseFunctions::eq, CommOp,
                                Return, "bool",
                                Args, tn, tn, End),
-                  
-#if 0
-                  new Function(c, "==", ListType::equals, Mapped,
-                               Return, "bool", 
-                               Args, tn, tn, End),
-                  
-                  new Function(c, "print", ListType::print, None,
-                               Return, "void",
-                               Args, tn, End),
-#endif
                   
                   EndArguments);
 
@@ -243,67 +180,72 @@ ListType::freeze()
     _isGCAtomic = false;
 }
 
-NODE_IMPLEMENTATION(ListType::construct_aggregate, Pointer)
+MU_NODE_IMPLEMENTATION(ListType::construct_aggregate, Pointer)
 {
-    Process*        p    = NODE_THREAD.process();
-    const ListType* c    = static_cast<const ListType*>(NODE_THIS.type());
+    Process*        p    = MU_NODE_THREAD.process();
+    const ListType* c    = static_cast<const ListType*>(MU_NODE_THIS.type());
     const Node*     n    = 0;
 
-    List list(static_cast<const ListType*>(NODE_THIS.type()),
-              NODE_THREAD,
-              NODE_THIS.argNode(0));
+    List list(static_cast<const ListType*>(MU_NODE_THIS.type()), p);
 
-    for (size_t i=1; n = NODE_THIS.argNode(i); i++)
+    for (size_t i=0; n = MU_NODE_THIS.argNode(i); i++)
     {
-        list.append(NODE_THREAD, NODE_THIS.argNode(i));
+        list.append(MU_NODE_THREAD, MU_NODE_THIS.argNode(i));
     }
 
-    NODE_RETURN(list.head());
+    MU_NODE_RETURN(list.head());
 }
 
-NODE_IMPLEMENTATION(ListType::cons, Pointer)
+MU_NODE_IMPLEMENTATION(ListType::construct_aggregate, ClassInstance*)
 {
-    Process *p = NODE_THREAD.process();
-    const ListType *c = static_cast<const ListType*>(NODE_THIS.type());
-    const Type *etype = c->elementType();
-    ClassInstance *head = ClassInstance::allocate(c);
-    etype->nodeEval(head->structure() + c->valueOffset(), 
-                    NODE_THIS.argNode(0),
-                    NODE_THREAD);
-    ClassInstance** next = (ClassInstance**)(head->structure() + c->nextOffset());
-    *next = NODE_ARG_OBJECT(1, ClassInstance);
-    NODE_RETURN(head);
+    Process*        p    = MU_NODE_THREAD.process();
+    const ListType* c    = static_cast<const ListType*>(MU_NODE_THIS.type());
+    const Node*     n    = 0;
+
+    List list(static_cast<const ListType*>(MU_NODE_THIS.type()), p);
+
+    List list(static_cast<const ListType*>(MU_NODE_THIS.type()),
+              MU_NODE_THREAD,
+              MU_NODE_THIS.argNode(0));
+
+    for (size_t i=0; n = MU_NODE_THIS.argNode(i); i++)
+    {
+        list.append(MU_NODE_THREAD, MU_NODE_THIS.argNode(i));
+    }
+
+    MU_NODE_RETURN(list.head());
 }
 
-NODE_IMPLEMENTATION(ListType::tail, Pointer)
+
+MU_NODE_IMPLEMENTATION(ListType::cons, ClassInstance*)
 {
-    ClassInstance *head = NODE_ARG_OBJECT(0, ClassInstance);
-    if (!head) throw NilArgumentException(NODE_THREAD);           
-    const ListType *c = static_cast<const ListType*>(NODE_THIS.type());
+    Process*        p     = MU_NODE_THREAD.process();
+    const ListType* c     = static_cast<const ListType*>(MU_NODE_THIS.type());
+    const Type*     etype = c->elementType();
+    ClassInstance*  head  = ClassInstance::allocate(c);
+    ClassInstance** next  = (ClassInstance**)(head->structure() + c->nextOffset());
+
+    MU_NODE_DECLARE_TYPE_ARG(etype, value, 0);
+    MU_NODE_DECLARE_ARG(ClassInstance*, nextP, 1);
+    *next = nextP;
+    MU_NODE_RETURN(head);
+}
+
+MU_NODE_IMPLEMENTATION(ListType::tail, ClassInstance*)
+{
+    MU_NODE_DECLARE_ARG(ClassInstance*, head, 0);
+    if (!head) throw NilArgumentException(MU_NODE_THREAD);           
+    const ListType *c = static_cast<const ListType*>(MU_NODE_THIS.type());
     ClassInstance** next = (ClassInstance**)(head->structure() + c->nextOffset());
-    NODE_RETURN(*next);
+    MU_NODE_RETURN(*next);
 }
 
-#define NODE_HEAD(TYPE)						\
-NODE_IMPLEMENTATION(ListType::head_ ## TYPE, TYPE)                     \
-{                                                                       \
-    ClassInstance *head = NODE_ARG_OBJECT(0, ClassInstance);            \
-    if (!head) throw NilArgumentException(NODE_THREAD);                 \
-    const ListType *c = static_cast<const ListType*>(head->type());     \
-    TYPE* p = reinterpret_cast<TYPE*>(head->structure() + c->valueOffset()); \
-    NODE_RETURN(*p);                                                    \
+MU_NODE_GENERIC_IMPLEMENTATION(ListType::head)
+{
+    MU_NODE_DECLARE_ARG(ClassInstance*, head, 0);
+    if (!head) throw NilArgumentException(MU_NODE_THREAD);
+    const ListType *c = static_cast<const ListType*>(head->type());
+    c->copy(head->structure() + c->valueOffset(), MU_NODE_RLOC);
 }
-
-NODE_HEAD(int)
-NODE_HEAD(int64)
-NODE_HEAD(float)
-NODE_HEAD(bool)
-NODE_HEAD(char)
-NODE_HEAD(short)
-NODE_HEAD(Pointer)
-NODE_HEAD(Vector4f)
-NODE_HEAD(Vector3f)
-NODE_HEAD(Vector2f)
-
 
 } // namespace Mu

@@ -39,7 +39,6 @@
 #include <Mu/ClassInstance.h>
 #include <Mu/Interface.h>
 #include <Mu/InterfaceImp.h>
-#include <Mu/MachineRep.h>
 #include <Mu/MemberFunction.h>
 #include <Mu/MemberVariable.h>
 #include <Mu/VariantType.h>
@@ -54,7 +53,7 @@ namespace Mu {
 using namespace std;
 
 Class::Class(Context* context, const char *name, Class* super) 
-    : Type(context, name, Mu::PointerRep::rep()), 
+    : Type(context, name)
       _frozen(false), 
       _instanceSize(0),
       _nebulousAncestry(false)
@@ -65,7 +64,7 @@ Class::Class(Context* context, const char *name, Class* super)
 }
 
 Class::Class(Context* context, const char *name, const ClassVector& supers) 
-    : Type(context, name, Mu::PointerRep::rep()), 
+    : Type(context, name)
       _frozen(false), 
       _instanceSize(0),
       _nebulousAncestry(false)
@@ -198,12 +197,6 @@ memberMatch(const Signature* a, const Signature* b)
 }
 
 
-Value
-Class::nodeEval(const Node* n, Thread& thread) const
-{
-    return Value((*n->func()._PointerFunc)(*n,thread));
-}
-
 void
 Class::nodeEval(void *p, const Node* n, Thread& thread) const
 {
@@ -254,10 +247,10 @@ Class::outputValueRecursive(ostream &o,
 }
 
 void 
-Class::outputValue(ostream &o, const Value &value, bool full) const
+Class::outputValue(ostream &o, const ValuePointer p, bool full) const
 {
     ValueOutputState state(o, full);
-    outputValueRecursive(o, ValuePointer(&value._Pointer), state);
+    outputValueRecursive(o, p, state);
 }
 
 void
@@ -676,18 +669,19 @@ Class::freeze()
     for (size_t i=0; i<_memberVariables.size(); i++)
     {
 	MemberVariable *v	= _memberVariables[i];
-	const MachineRep *rep	= v->storageClass()->machineRep();
-	size_t alignment	= rep->structAlignment();
+        const Type* vtype       = v->storageClass();
+	size_t alignment	= vtype->structAlignment();
         v->setAddress(i);
 
-        if (rep == PointerRep::rep()) _isGCAtomic = false;
+        if (!vtype->isPrimitiveType()) _isGCAtomic = false;
 
 	while (start % alignment != 0) start++;
 	v->_instanceOffset = start;
-	start += rep->size();
+	start += vtype->size();
     }
 
     _instanceSize = start;
+    setSizes(start, start, start);
 
     if (!_memberVariables.empty())
     {

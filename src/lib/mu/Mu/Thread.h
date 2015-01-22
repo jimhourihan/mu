@@ -69,10 +69,10 @@ class Thread
     //	Types
     //
 
-    typedef STLVector<Thread*>::Type        ThreadPool;
-    typedef STLEXTBarray<Value>::Type       Stack;
-    typedef void*                           StackValue;
-    typedef StackValue*                     StackPointer;
+    typedef STLVector<Thread*>::Type  ThreadPool;
+    typedef STLEXTBarray<Value>::Type Stack;
+    typedef void*                     StackValue;
+    typedef StackValue*               StackPointer;
 
     struct BackTraceFrame
     {
@@ -116,7 +116,6 @@ class Thread
     Context*            context() { return _process->context(); }
     const Context*      context() const { return _process->context(); }
 
-
     //
     //	Thread Control API
     //
@@ -129,6 +128,7 @@ class Thread
     //
 
     void		run(const Node *root, bool block=true);
+
     bool		isRunning() const { return _rootNode ? true : false; }
 
     void                suspend();
@@ -217,6 +217,7 @@ class Thread
         void newStackFrame(size_t);
 
         void setParameter(size_t n, const Value &v);
+        Pointer parameterValue(size_t n);
         void endParameters(); 
 
         void popStackFrame();
@@ -334,6 +335,7 @@ class Thread
 
     void 		beginActivation(size_t size);
     void		setParameter(size_t n, const Value &v) { _stack[n] = v; }
+    ValuePointer        parameterValue(size_t n) { return ValuePointer(&(_stack[n])); }
     void		endParameters(size_t r) { _stackOffset = r; }
 
   private:
@@ -409,6 +411,12 @@ inline void
 Thread::StackRecord::setParameter(size_t n, const Value& v)
 { 
     _thread->setParameter(_size + n, v);
+}
+
+inline Pointer
+Thread::StackRecord::parameterValue(size_t n)
+{ 
+    return _thread->parameterValue(_size + n);
 }
 
 inline void

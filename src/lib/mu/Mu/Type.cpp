@@ -35,7 +35,6 @@
 //
 
 #include <Mu/Archive.h>
-#include <Mu/MachineRep.h>
 #include <Mu/Node.h>
 #include <Mu/Object.h>
 #include <Mu/Type.h>
@@ -47,9 +46,15 @@ namespace Mu {
 
 using namespace std;
 
-Type::Type(Context* context, const char *name, const MachineRep *rep)
+Type::Type(Context* context,
+           const char *name,
+           size_t size,
+           size_t naturalAlignment,
+           size_t structAlignment)
     : Symbol(context, name),
-      _machineRep(rep),
+      _size(size),
+      _naturalAlignment(naturalAlignment),
+      _structAlignment(structAlignment),
       _referenceType(0),
       _isTypePattern(false),
       _isTypeVariable(false),
@@ -68,9 +73,12 @@ Type::Type(Context* context, const char *name, const MachineRep *rep)
     _datanode = true;
 }
 
-Type::Type(Context* context, const MachineRep *rep)
-    : Symbol(context),
-      _machineRep(rep),
+Type::Type(Context* context,
+           const char* name)
+    : Symbol(context, name),
+      _size(0),
+      _naturalAlignment(0),
+      _structAlignment(0),
       _referenceType(0),
       _isTypePattern(false),
       _isTypeVariable(false),
@@ -95,6 +103,14 @@ Type::~Type()
 {
 }
 
+void                        
+Type::setSizes(size_t s, size_t na, size_t sa)
+{
+    _size = s;
+    _naturalAlignment = na;
+    _structAlignment = sa;
+}
+
 void
 Type::output(std::ostream &o) const
 {
@@ -112,7 +128,7 @@ Type::outputNode(std::ostream &o, const Node *n) const
     const DataNode *dn = static_cast<const DataNode*>(n);
     output(o);
     o << " = ";
-    outputValue(o,dn->_data);
+    outputValue(o, dn->value());
 }
 
 void
@@ -121,12 +137,6 @@ Type::outputValueRecursive(ostream& o,
                            ValueOutputState&) const
 {
     o << "(type does not implement Type::outputValueRecursive())";
-}
-
-void
-Type::outputValue(std::ostream &o, const Value &value, bool full) const
-{
-    o << "(type does not implement Type::outputValue() for Value)";
 }
 
 void
@@ -217,7 +227,7 @@ Type::serialize(std::ostream& o,
 {
     if (isPrimitiveType())
     {
-        o.write((const char*)p, machineRep()->size());
+        o.write((const char*)p, size());
     }
     else
     {
@@ -250,7 +260,7 @@ Type::deserialize(std::istream& i,
 {
     if (isPrimitiveType())
     {
-        i.read((char*)p, machineRep()->size());
+        i.read((char*)p, size());
     }
     else
     {
@@ -298,9 +308,9 @@ Type::reconstitute(Archive::Reader& archive, Object* obj) const
     }
 }
 
-NODE_IMPLEMENTATION(Type::dataNodeReturnValue,Value)
+MU_NODE_IMPLEMENTATION(Type::dataNodeReturnValue, ValuePointer)
 {
-    return ((const DataNode&)NODE_THIS)._data;
+    MU_NODE_RETURN( ((const DataNode&)MU_NODE_THIS).value() );
 }
 
 

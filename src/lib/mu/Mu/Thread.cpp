@@ -34,6 +34,7 @@
 //  DAMAGE.
 //
 
+#include <Mu/BaseFunctions.h>
 #include <Mu/Context.h>
 #include <Mu/Exception.h>
 #include <Mu/Process.h>
@@ -187,7 +188,7 @@ Thread::go()
 
     try
     {
-	_returnValue = _rootNode->eval(*this);
+	_rootNode->eval(*this, &_returnValue);
     }
     catch (Mu::Exception &exc)
     {
@@ -406,7 +407,7 @@ Thread::call(const Function* f,
         for (int i=0; i < n; i++)
         {
             const Type* t = f->argType(i);
-            DataNode* dn = new DataNode(0, t->machineRep()->constantFunc(), t);
+            DataNode* dn = new DataNode(0, BaseFunctions::constantAnySize, t);
             dn->_data = args[i];
             body->argv()[i] = dn;
         }

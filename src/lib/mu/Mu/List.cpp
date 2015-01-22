@@ -69,17 +69,6 @@ List::List(Process* p, const ListType* l) :
     _current = _head;
 }
 
-List::List(const ListType* l, Thread& thread, const Node* n) :
-    _type(l),
-    _process(thread.process()),
-    _voff(l->valueOffset()),
-    _noff(l->nextOffset())
-{
-    _head = ClassInstance::allocate(_type);
-    _current = _head;
-    _type->elementType()->nodeEval(valuePointer(), n, thread);
-}
-
 void
 List::appendDefaultValue()
 {
@@ -98,7 +87,7 @@ List::append(Thread& thread, const Node* n)
     if (_current) next() = o;
     if (!_head) _head = o;
     _current = o;
-    _type->elementType()->nodeEval(valuePointer(), n, thread);
+    n->eval(thread, valuePointer());
 }
 
 
@@ -110,7 +99,7 @@ List::splice(Thread& thread, const Node* n)
     if (!_head) _head = o;
     _current = o;
     _head = o;
-    _type->elementType()->nodeEval(valuePointer(), n, thread);
+    n->eval(thread, valuePointer());
     return o;
 }
 

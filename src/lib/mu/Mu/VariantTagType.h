@@ -76,11 +76,9 @@ public:
     virtual MatchResult match(const Type*, Bindings&) const;
     virtual Object* newObject() const;
     virtual size_t objectSize() const;
-    virtual Value nodeEval(const Node*,Thread &t) const;
     virtual void nodeEval(void*, const Node*,Thread &t) const;
     virtual const Type* nodeReturnType(const Node*) const;
 
-    virtual void            outputValue(std::ostream&, const Value&, bool full=false) const;
     virtual void            outputValueRecursive(std::ostream&, const ValuePointer, ValueOutputState&) const;
     virtual const Type*     fieldType(size_t) const;
     virtual ValuePointer    fieldPointer(Object*, size_t) const;
@@ -92,7 +90,7 @@ public:
     //  Nodes
     //
 
-    static NODE_DECLARATION(upcast, Pointer);
+    static MU_NODE_DECLARATION(upcast, Pointer);
 
 protected:
     virtual void load();

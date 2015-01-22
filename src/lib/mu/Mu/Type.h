@@ -47,7 +47,6 @@
 namespace Mu {
 
 class ReferenceType;
-class MachineRep;
 class Object;
 class TypeVariable;
 class Process;
@@ -90,22 +89,27 @@ class Type : public Symbol
     };
 
     //
-    //	The Value::Rep indicates how the type will store a value.
-    //
-    //	You will need to supply a MachineRep* pointer. Examples are:
-    //	FloatRep::rep(), IntRep::rep(), etc. These will hold the basic
-    //	MachineRep class pointers.
+    //	The memory layout characteristics must be known the base
+    //	class. (We don't have MachineRep any more to tell us all of
+    //	this).
     //
 
-    Type(Context* context, const char *name, const MachineRep*);
+    Type(Context* context, 
+         const char *name, 
+         size_t size,
+         size_t naturalAlignment,
+         size_t structAlignment);
+
     virtual ~Type();
 
     //
     //	The class indicating the machine representation of the
-    //	type. The value passed into the constructor is returned.
+    //	type. The values passed into the constructor are returned.
     //
 
-    const MachineRep*		machineRep() const { return _machineRep; }
+    size_t                      size() const { return _size; }
+    size_t                      naturalAlignment() const { return _naturalAlignment; }
+    size_t                      structAlignment() const { return _structAlignment; }
 
     //
     //	A TypePattern is a subclass of Type that is a placeholder for
@@ -193,17 +197,11 @@ class Type : public Symbol
     virtual const Type*		nodeReturnType(const Node*) const;
 
     //
-    //	Evaluates a node and returns a Value. 
-    //
-
-    virtual Value		nodeEval(const Node*,Thread &t) const = 0;
-
-    //
     //	Evaluates a node and places the value at the memory location. Make
     //	sure the alignment is correct before calling this!
     //
 
-    virtual void 		nodeEval(void*, const Node*,Thread &t) const = 0;
+    virtual void 		nodeEval(void* lval, const Node*, Thread &t) const = 0;
 
     //
     //	Deletes (for real) an Object of this type. This can't be
@@ -242,9 +240,8 @@ class Type : public Symbol
 
     virtual void		output(std::ostream&) const;
     virtual void		outputNode(std::ostream&,const Node*) const;
-    virtual void		outputValue(std::ostream&,const Value&, bool full=false) const;
-    void                        outputValue(std::ostream&, const ValuePointer, bool full=false) const;
 
+    void                        outputValue(std::ostream&, const ValuePointer, bool full=false) const;
     virtual void		outputValueRecursive(std::ostream&,
                                                      const ValuePointer,
                                                      ValueOutputState&) const;
@@ -305,15 +302,24 @@ class Type : public Symbol
 
     virtual void                copyInstance(Pointer from, Pointer to) const;
 
-protected:
-    Type(Context* context, const MachineRep*);
+    //
+    //  Copy a type from one location to another
+    //
+
+    void copy(ValuePointer src, ValuePointer dst) const { memcpy(src, dst, _size); }
 
   protected:
-    static NODE_DECLARAION(dataNodeReturnValue,Value);
+    Type(Context* context, const char* name);
+    void                        setSizes(size_t s, size_t na, size_t sa);
 
   protected:
+    static MU_NODE_DECLARATION(dataNodeReturnValue,ValuePointer);
+
+  protected:
+    size_t                      _size;
+    size_t                      _naturalAlignment;
+    size_t                      _structAlignment;
     ReferenceType*		_referenceType;
-    const MachineRep*		_machineRep;
     bool			_isTypePattern      : 1;
     bool			_isTypeVariable     : 1;
     bool			_isUnresolvedType   : 1;

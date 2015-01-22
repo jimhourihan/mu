@@ -64,13 +64,13 @@ class ParameterVariable :public StackVariable
     ParameterVariable(Context* context, 
                       const char *name, 
 		      const Type *storageClass, 
-		      const Value& defaultValue,
+		      const ValuePointer defaultValue,
                       Attributes a=ReadWrite);
 
     ParameterVariable(Context* context, 
                       const char *name, 
 		      const char *storageClass, 
-		      const Value& defaultValue,
+		      const ValuePointer defaultValue,
                       Attributes a=ReadWrite);
 
     virtual ~ParameterVariable();
@@ -80,13 +80,15 @@ class ParameterVariable :public StackVariable
     virtual void	output(std::ostream &o) const;
 
     bool    hasDefaultValue() const { return _hasDefaultValue; }
-    Value   defaultValue() const { return _value; }
+    ValuePointer   defaultValue() const { return _value; }
 
-  private:
-    void setDefaultValue(const Value& v) { _value = v; }
-
-  private:
-    Value           _value;
+//private:
+ //   void setDefaultValue(const Value& v) { _value = v; }
+//
+//  private:
+//    Value           _value;
+private:
+    ValuePointer    _value;
     bool            _hasDefaultValue    : 1;
     bool            _output             : 1;
     bool            _inputOutput        : 1;

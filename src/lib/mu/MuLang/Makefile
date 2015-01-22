@@ -1,4 +1,11 @@
 #  -*- mode: makefile -*-
+# 
+#  Copyright (C) 2001  Jim Hourihan
+# 
+#  The coded instructions herein are the sole property of Jim Hourihan
+#  and may not be modified, redistributed, or used without permission.
+# 
+
 
 PROJECT    = MuLang
 TYPE       = LIBRARY

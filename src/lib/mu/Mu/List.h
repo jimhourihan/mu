@@ -64,12 +64,6 @@ public:
     List(Process*, ClassInstance*);
 
     //
-    //  New list from result of eval
-    //
-
-    List(const ListType*, Thread& thread, const Node*);
-
-    //
     //  isNil means there is no longer a list
     //
 

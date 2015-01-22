@@ -1,0 +1,69 @@
+
+= Differences between the original parser and the GLR parser syntax =
+
+The GLR parser has a core expression language which is independent of the C
+"command" syntax. The C syntax is then layered on to of the expression
+syntax. 
+
+ * The one huge difference is that the GLR version has a new type of
+   experssion called a "sequence". The result of the sequence expression is
+   the value of the last expression. The idea is to replace the C "block"
+   with this expression type. A sequence expression can appear anywhere a
+   top-level expression is allowed:
+
+	'{' expr ';' expr ';' expr ... '}'
+
+ * Because of the above, the function definition syntax is also different
+   in that the body of the function is just a single expession. So
+   something like (\: add (a, b) a + b) is now accepted. The C-like blocks
+   are also accepted but they are actually a sequence expression. The
+   sequence expression separator ';' can optionally appear redundantly in a
+   sequence expression so using it as a terminator is accepted.
+
+ * let pattern syntax can use either the old way (where let bindings apply
+   to the current "block" or in the new case expr-sequence) or the new way
+   using "in":
+
+	let pattern = rhs in expression
+
+    -e.g.-
+
+	let x = 1 in x + 1
+	int => 2
+
+ * Modules, types, require and use are handled a bit differently. The
+   "require" and "use" statements are replaced by require and use
+   expressions. These will return a runtime symbol (type, module, etc)
+   instead of void in order to have them work in the ast resolution. If a
+   type or module appears on the rhs of a pattern it results in the symbol
+   as well. require and use can now take a list of items. The sequence
+   expression creates a scope in which the use expression is bound. This
+   mimics the c-like statements from before:
+
+	let path = { use io, system; getcwd() } 
+	    in (path, io.istream(path))
+
+     -or in a more expressionish way-
+
+	use system,io in
+	    let path = getcwd() in (path, istream(path))
+
+   for example, the above limits the use to the sequence expression. So
+   e.g. its necessary to use io.istream instead of just istream.
+
+
+== Parser Issues ==
+
+ * With GLR it is no longer possible to have any feedback between the lexer
+   and grammar. This has some huge consequences about where ambiguity is
+   resolved. 
+
+== Major Type Syntax Changes ==
+
+ * Type modifiers still exist for C typename compatibility but they are now
+   essentially keywords. A special token indicating a type modifier must be
+   passed to the parser.
+
+== Expression Syntax Changes ==
+
+ * No bitwise ops -- these will be done as functions

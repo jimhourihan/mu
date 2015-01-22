@@ -52,7 +52,12 @@ namespace Mu {
 class PrimitiveType : public Type
 {
   public:
-    PrimitiveType(Context* context, const char *name, const MachineRep*);
+    PrimitiveType(Context* context,
+                  const char *name,
+                  size_t size,
+                  size_t naturalAlignment,
+                  size_t structAlignment);
+
     virtual ~PrimitiveType();
 
     //
@@ -61,10 +66,6 @@ class PrimitiveType : public Type
     //
 
     virtual Object*		newObject() const = 0;
-
-    //
-    //  The object size is the size of the primitive. 
-    //
 
     virtual size_t              objectSize() const;
 

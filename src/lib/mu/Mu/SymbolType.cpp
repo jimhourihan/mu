@@ -128,6 +128,23 @@ TypeSymbolType::~TypeSymbolType() {}
 
 //----------------------------------------------------------------------
 
+ModuleSymbolType::ModuleSymbolType(Context* c, const char* name) 
+    : SymbolType(c, name)
+{
+}
+
+ModuleSymbolType::~ModuleSymbolType() {}
+
+//----------------------------------------------------------------------
+
+TypeModifierSymbolType::TypeModifierSymbolType(Context* c, const char* name) 
+    : SymbolType(c, name)
+{
+}
+
+TypeModifierSymbolType::~TypeModifierSymbolType() {}
+
+//----------------------------------------------------------------------
 FunctionSymbolType::FunctionSymbolType(Context* c, const char* name) 
     : SymbolType(c, name)
 {

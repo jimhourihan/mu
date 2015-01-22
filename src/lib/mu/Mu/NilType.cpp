@@ -81,7 +81,7 @@ NilType::nodeEval(void*, const Node *n, Thread &thread) const
 }
 
 void 
-NilType::outputValue(ostream &o, const Value &value, bool) const
+NilType::outputValue(ostream &o, const ValuePointer value, bool) const
 {
     o << "nil";
 }

@@ -56,7 +56,7 @@ FreeVariable::FreeVariable(Context* context,
 FreeVariable::FreeVariable(Context* context,
                            const char *name,
                            const Type *storageClass,
-                           const Value& defaultValue)
+                           const ValuePointer defaultValue)
     : ParameterVariable(context, name, storageClass, defaultValue)
 {
 }
@@ -64,7 +64,7 @@ FreeVariable::FreeVariable(Context* context,
 FreeVariable::FreeVariable(Context* context,
                            const char *name,
                            const char *storageClass,
-                           const Value& defaultValue)
+                           const ValuePointer defaultValue)
     : ParameterVariable(context, name, storageClass, defaultValue)
 {
 }

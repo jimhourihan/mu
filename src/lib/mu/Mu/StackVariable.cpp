@@ -35,6 +35,7 @@
 //
 
 #include <Mu/Type.h>
+#include <Mu/BaseFunctions.h>
 #include <Mu/StackVariable.h>
 #include <Mu/MachineRep.h>
 #include <iostream>
@@ -99,9 +100,7 @@ StackVariable::nodeReturnType(const Node* n) const
     }
     else
     {
-        const MachineRep* rep = t->machineRep();
-
-        if (n->func() && n->func() == rep->referenceStackFunc())
+        if (n->func() && n->func() == NodeFunc(BaseFunctions::referenceStack))
         {
             return t->referenceType();
         }

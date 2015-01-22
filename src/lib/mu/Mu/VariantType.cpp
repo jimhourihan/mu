@@ -97,24 +97,11 @@ VariantType::copyInstance(Pointer src, Pointer dst) const
     reinterpret_cast<VariantInstance*>(src)->tagType()->copyInstance(src, dst);
 }
 
-Value
-VariantType::nodeEval(const Node* n, Thread& thread) const
-{
-    return Value((*n->func()._PointerFunc)(*n,thread));
-}
-
 void
 VariantType::nodeEval(void *p, const Node* n, Thread& thread) const
 {
     Pointer *pp = reinterpret_cast<Pointer*>(p);
     *pp = (*n->func()._PointerFunc)(*n,thread);
-}
-
-void 
-VariantType::outputValue(ostream &o, const Value &value, bool full) const
-{
-    ValueOutputState state(o, full);
-    outputValueRecursive(o, ValuePointer(&value._Pointer), state);
 }
 
 void 

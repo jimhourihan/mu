@@ -121,12 +121,15 @@ RuntimeModule::load()
     Type* nt = new NameType(context);
     Type* st = new SymbolType(context, "symbol");
     Type* tt = new TypeSymbolType(context, "type_symbol");
+    Type* mt = new ModuleSymbolType(context, "module_symbol");
     Type* ft = new FunctionSymbolType(context, "function_symbol");
-    Type* vt = new ParameterSymbolType(context, "variable_symbol");
+    Type* vt = new VariableSymbolType(context, "variable_symbol");
     Type* pt = new ParameterSymbolType(context, "parameter_symbol");
-    Type* sct = new ParameterSymbolType(context, "symbolic_constant");
+    Type* sct = new SymbolicConstantSymbolType(context, "symbolic_constant");
+    Type* tm = new TypeModifierSymbolType(context, "type_modifier_symbol");
 
-    addSymbols(nt, st, tt, ft, vt, pt, sct, EndArguments);
+    addSymbols(nt, st, tt, mt, ft, vt, pt, tm, sct, EndArguments);
+
     context->listType(st);
     context->listType(context->intType());
     Context::TypeVector types(3);
@@ -139,6 +142,8 @@ RuntimeModule::load()
     types[0] = context->listType(ft);
     types[1] = context->listType(vt);
     context->tupleType(types);
+
+    context->listType(tt);
 
     //
     //  Make the function type (void;)
@@ -465,6 +470,20 @@ RuntimeModule::load()
                              new ParameterVariable(c, "sym", "runtime.symbol"),
                              End),
 
+                new Function(c, "module_from_symbol",
+                             RuntimeModule::module_from_symbol, None,
+                             Return, "runtime.module_symbol",
+                             Parameters,
+                             new ParameterVariable(c, "sym", "runtime.symbol"),
+                             End),
+
+                new Function(c, "module_location",
+                             RuntimeModule::module_location, None,
+                             Return, "string",
+                             Parameters,
+                             new ParameterVariable(c, "sym", "runtime.module_symbol"),
+                             End),
+
                 new Function(c, "function_from_symbol",
                              RuntimeModule::function_from_symbol, None,
                              Return, "runtime.function_symbol",
@@ -617,6 +636,51 @@ RuntimeModule::load()
                              Return, "string",
                              Parameters,
                              new ParameterVariable(c, "sym", "runtime.symbolic_constant"),
+
+                new Function(c, "make_tuple_type",
+                             RuntimeModule::make_tuple_type, None,
+                             Return, "runtime.type_symbol",
+                             Parameters,
+                             new ParameterVariable(c, "types", "[runtime.type_symbol]"),
+                             End),
+
+                new Function(c, "make_list_type",
+                             RuntimeModule::make_list_type, None,
+                             Return, "runtime.type_symbol",
+                             Parameters,
+                             new ParameterVariable(c, "element_type", "runtime.type_symbol"),
+                             End),
+
+                new Function(c, "make_fixed_array_type",
+                             RuntimeModule::make_fixed_array_type, None,
+                             Return, "runtime.type_symbol",
+                             Parameters,
+                             new ParameterVariable(c, "element_type", "runtime.type_symbol"),
+                             new ParameterVariable(c, "dimensions", "[int]"),
+                             End),
+
+                new Function(c, "make_dynamic_array_type",
+                             RuntimeModule::make_dynamic_array_type, None,
+                             Return, "runtime.type_symbol",
+                             Parameters,
+                             new ParameterVariable(c, "element_type", "runtime.type_symbol"),
+                             //new ParameterVariable(c, "dimensions", "[int]", Value(Pointer(0))),
+                             End),
+
+                new Function(c, "make_function_type",
+                             RuntimeModule::make_function_type, None,
+                             Return, "runtime.type_symbol",
+                             Parameters,
+                             new ParameterVariable(c, "return_type", "runtime.type_symbol"),
+                             new ParameterVariable(c, "parameter_types", "[runtime.type_symbol]"),
+                             End),
+
+                new Function(c, "make_modified_type",
+                             RuntimeModule::make_modified_type, None,
+                             Return, "runtime.type_symbol",
+                             Parameters,
+                             new ParameterVariable(c, "type", "runtime.type_symbol"),
+                             new ParameterVariable(c, "modifier", "runtime.type_modifier_symbol"),
                              End),
 
 		EndArguments );
@@ -1257,6 +1321,31 @@ NODE_IMPLEMENTATION(RuntimeModule::type_from_symbol, Pointer)
     }
 }
 
+NODE_IMPLEMENTATION(RuntimeModule::module_from_symbol, Pointer)
+{
+    Process *p = NODE_THREAD.process();
+    const Symbol* symbol = NODE_ARG_OBJECT(0, const Symbol);
+    if (!symbol) throw NilArgumentException();
+
+    if (const Module* m = dynamic_cast<const Module*>(symbol))
+    {
+        NODE_RETURN(Pointer(m));
+    }
+    else
+    {
+	throw BadCastException();
+    }
+}
+
+NODE_IMPLEMENTATION(RuntimeModule::module_location, Pointer)
+{
+    const Mu::StringType* stype = static_cast<const Mu::StringType*>(NODE_THIS.type());
+    const Module* module = NODE_ARG_OBJECT(0, const Module);
+    if (!module) throw NilArgumentException();
+
+    NODE_RETURN(stype->allocate(module->location()));
+}
+
 NODE_IMPLEMENTATION(RuntimeModule::symbol_name, Pointer)
 {
     const Mu::StringType* stype = static_cast<const Mu::StringType*>(NODE_THIS.type());
@@ -1622,6 +1711,92 @@ NODE_IMPLEMENTATION(RuntimeModule::symbolic_constant_value_as_string, Pointer)
     sc->type()->outputValue(str, sc->value());
     NODE_RETURN(stype->allocate(str));
 }
+
+NODE_IMPLEMENTATION(RuntimeModule::make_tuple_type, Pointer)
+{
+    Process* p = NODE_THREAD.process();
+    Context* c = p->context();
+    ClassInstance* tlist = NODE_ARG_OBJECT(0, ClassInstance);
+    if (!tlist) throw NilArgumentException();
+
+    Context::TypeVector types;
+
+    for (List list(p, tlist); !list.isNil(); list++)
+    {
+        types.push_back(list.value<const Type*>());
+    }
+
+    const Type* ttype = c->tupleType(types);
+    NODE_RETURN(Pointer(ttype));
+}
+
+NODE_IMPLEMENTATION(RuntimeModule::make_function_type, Pointer)
+{
+    Process*       p     = NODE_THREAD.process();
+    Context*       c     = p->context();
+    const Type*    rtype = NODE_ARG_OBJECT(0, const Type);
+    ClassInstance* tlist = NODE_ARG_OBJECT(1, ClassInstance);
+    if (!rtype || !tlist) throw NilArgumentException();
+
+    Signature* sig = new Signature();
+    sig->push_back(rtype);
+
+    for (List list(p, tlist); !list.isNil(); list++)
+    {
+        sig->push_back(list.value<const Type*>());
+    }
+
+    const Type* ftype = c->functionType(sig);
+    NODE_RETURN(Pointer(ftype));
+}
+
+NODE_IMPLEMENTATION(RuntimeModule::make_list_type, Pointer)
+{
+    Process*    p     = NODE_THREAD.process();
+    Context*    c     = p->context();
+    const Type* etype = NODE_ARG_OBJECT(0, const Type);
+    if (!etype) throw NilArgumentException();
+    NODE_RETURN(Pointer(c->listType(etype)));
+}
+
+NODE_IMPLEMENTATION(RuntimeModule::make_fixed_array_type, Pointer)
+{
+    Process*    p     = NODE_THREAD.process();
+    MuLangContext *c = static_cast<MuLangContext*>(p->context());
+    const Type* etype = NODE_ARG_OBJECT(0, const Type);
+    ClassInstance* dlist = NODE_ARG_OBJECT(1, ClassInstance);
+    if (!etype || !dlist) throw NilArgumentException();
+    
+    MuLangContext::SizeVector sizes;
+    
+    for (List list(p, dlist); !list.isNil(); list++)
+    {
+        sizes.push_back(list.value<int>());
+    }
+
+    NODE_RETURN(Pointer(c->arrayType(etype, sizes)));
+}
+
+NODE_IMPLEMENTATION(RuntimeModule::make_dynamic_array_type, Pointer)
+{
+    Process*    p     = NODE_THREAD.process();
+    MuLangContext *c = static_cast<MuLangContext*>(p->context());
+    const Type* etype = NODE_ARG_OBJECT(0, const Type);
+    if (!etype) throw NilArgumentException();
+    
+    NODE_RETURN(Pointer(c->arrayType(etype, 1, 0)));
+}
+
+NODE_IMPLEMENTATION(RuntimeModule::make_modified_type, Pointer)
+{
+    Process*    p     = NODE_THREAD.process();
+    Context*    c     = p->context();
+    const Type* etype = NODE_ARG_OBJECT(0, const Type);
+    const TypeModifier* mtype = NODE_ARG_OBJECT(1, const TypeModifier);
+    if (!etype || !mtype) throw NilArgumentException();
+    NODE_RETURN(Pointer(mtype->transform(etype, c)));
+}
+
 
 } // namespace Mu
 

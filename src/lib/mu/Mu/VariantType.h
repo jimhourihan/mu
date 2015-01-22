@@ -94,7 +94,6 @@ public:
     virtual MatchResult match(const Type*, Bindings&) const;
     virtual Object* newObject() const;
     virtual size_t objectSize() const;
-    virtual Value nodeEval(const Node*,Thread &t) const;
     virtual void nodeEval(void*, const Node*,Thread &t) const;
     virtual void outputValue(std::ostream&, const Value&, bool full=false) const;
     virtual void outputValueRecursive(std::ostream&, const ValuePointer, ValueOutputState&) const;
@@ -105,7 +104,7 @@ protected:
     virtual void load();
 
 private:
-    static NODE_DECLARATION(match, void);
+    static MU_NODE_DECLARATION(match, void);
 
 private:
     size_t          _numTags;

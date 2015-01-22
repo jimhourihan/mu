@@ -133,12 +133,6 @@ VariantTagType::copyInstance(Pointer a, Pointer b) const
     representationType()->copyInstance(src->structure(), dst->structure());
 }
 
-Value
-VariantTagType::nodeEval(const Node* n, Thread& thread) const
-{
-    return Value((*n->func()._PointerFunc)(*n,thread));
-}
-
 void
 VariantTagType::nodeEval(void *p, const Node* n, Thread& thread) const
 {
@@ -225,13 +219,6 @@ VariantTagType::outputValueRecursive(ostream &o,
     {
         o << "nil";
     }
-}
-
-void 
-VariantTagType::outputValue(ostream &o, const Value& value, bool full) const
-{
-    ValueOutputState state(o, full);
-    outputValueRecursive(o, ValuePointer(&value._Pointer), state);
 }
 
 void 

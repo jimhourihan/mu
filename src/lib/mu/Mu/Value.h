@@ -42,13 +42,8 @@
 #include <Mu/Name.h>
 #include <string.h>
 
-#ifdef _MSC_VER
-#define _int64 _value_int64
-#endif
-
 namespace Mu {
 class Type;
-
 // 
 //  The Value object is used for two purposesin Mu: for storage of all
 //  any object (in the C sense) or reference to a Mu::Object for
@@ -159,8 +154,20 @@ void zero(Value& v)
     //assignOp(v._Vector4f, 0.f);
 }
 
+
 //
-//  A value with an accociated type
+//  Not the same as a pointer-to-Value. This thing directly points at
+//  a value. This is different than pointing to the Value union which
+//  may have a different start address for each of its members.
+//
+
+typedef void* ValuePointer;
+
+ValuePointer addressOf(Value& v) { return ValuePointer(&v); }
+const ValuePointer addressOf(const Value& v) { return ValuePointer(&v); }
+
+//
+//  new
 //
 
 struct TypedValue
@@ -172,13 +179,6 @@ struct TypedValue
     Value               _value;
     const Type*         _type;
 };
-
-//
-//  Not the same as a pointer-to-Value. This thing directly points at
-//  a value. This is different than pointing to the Value union which
-//  may have a different start address for each of its members.
-//
-typedef void* ValuePointer;
 
 } // namespace Mu
 

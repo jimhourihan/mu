@@ -40,6 +40,7 @@
 #include <Mu/Function.h>
 #include <Mu/Module.h>
 #include <Mu/Name.h>
+#include <Mu/Context.h>
 #include <Mu/NodeFunc.h>
 #include <algorithm>
 #include <iostream>
@@ -207,9 +208,12 @@ class NodeAssembler
     void                addChar(int i);
     void                setSourceName(const std::string& name);
 
+    int&                lineNum() { return _line;}
+    int&                charNum() { return _char;}
     int                 lineNum() const { return _line;}
     int                 charNum() const { return _char;}
     Name                sourceName() const { return _sourceName; }
+
 
     //
     //  Error reporting. The versions that take a Node* argument
@@ -283,6 +287,19 @@ class NodeAssembler
     Name                uniqueNameInScope(const char*) const;
 
     //
+    //  Finds all symbol in the scope (in order) which match the name
+    //
+
+    void                findSymbolsInScope(Name, SymbolVector&) const;
+
+    //
+    //  Returns the "most important" symbol in scope. E.g. if there's
+    //  a module name that would supercede a function name.
+    //
+
+    const Symbol*       findSymbolInScope(Name) const;
+
+    //
     //	Prefix scope overrides the scope stack. This is for languages that
     //	require explicit scope operators: foo.bar.baz. Set this to 0, to
     //	return to use of the scope stack.
@@ -342,6 +359,7 @@ class NodeAssembler
     Node*               constReduce(Node*) const;
     Node*		constReduce(const Function*,Node*) const;
     bool                isConstant(Node*) const;
+    bool                isSymbolExpression(Node*) const;
 
     Node*               functionReduce(const Function*, Node*);
 
@@ -350,6 +368,27 @@ class NodeAssembler
     //
 
     SymbolicConstant*   newSymbolicConstant(Name, Node*);
+
+    //
+    //  Symbol Types
+    //
+
+    Node*               functionSymbolConstant(const Function*);
+    Node*               typeSymbolConstant(const Type*);
+    Node*               moduleSymbolConstant(const Module*);
+    Node*               paramSymbolConstant(const ParameterVariable*);
+
+    //
+    //  Eval type expression
+    //
+
+    template <class T>
+    const T* evalSymbolicExpression(Node* n)
+    {
+        Symbol* sym;
+        context()->symbolType()->nodeEval(&sym, n, *thread());
+        return sym;
+    }
 
     //
     //	Returns a node which casts the passed in node from the toType
@@ -386,6 +425,12 @@ class NodeAssembler
     //
 
     Node*               memberOperator(const char* op, Node*, NodeList);
+
+    //
+    //  Conditional expression
+    //
+
+    Node*               conditionalExpression(Node*, Node*, Node*);
 
     //
     //  Call a specific function. This function does not test for

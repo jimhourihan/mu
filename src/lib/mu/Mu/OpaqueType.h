@@ -50,7 +50,10 @@ namespace Mu {
 class OpaqueType : public PrimitiveType
 {
   public:
-    OpaqueType(Context* c, const char*);
+    OpaqueType(Context* c, const char*, 
+               size_t size,
+               size_t naturalAlignment,
+               size_t structAlignment);
     ~OpaqueType();
 
     //
@@ -66,7 +69,6 @@ class OpaqueType : public PrimitiveType
     //	Output the appropriate Value in human readable form
     //
 
-    virtual void outputValue(std::ostream&, const Value&, bool full=false) const;
     virtual void outputValueRecursive(std::ostream&,
                                       const ValuePointer,
                                       ValueOutputState&) const;
@@ -78,9 +80,9 @@ class OpaqueType : public PrimitiveType
 
     virtual void load();
 
-    static NODE_DECLARATION(dereference,Pointer);
-    static NODE_DECLARATION(conditionalExpr,Pointer);
-    static NODE_DECLARATION(assign,Pointer);
+    static MU_NODE_DECLARATION(dereference,Pointer);
+    static MU_NODE_DECLARATION(conditionalExpr,Pointer);
+    static MU_NODE_DECLARATION(assign,Pointer);
 };
 
 

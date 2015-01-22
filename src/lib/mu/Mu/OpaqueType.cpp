@@ -46,8 +46,9 @@
 namespace Mu {
 using namespace std;
 
-OpaqueType::OpaqueType(Context* c, const char* name) 
-    : PrimitiveType(c, name, PointerRep::rep())
+OpaqueType::OpaqueType(Context* c, const char* name,
+                       size_t size, size_t naturalAlignment, size_t structAlignment) 
+    : PrimitiveType(c, name, size, naturalAlignment, structAlignment)
 {
 }
 
@@ -59,12 +60,6 @@ OpaqueType::newObject() const
     return new PrimitiveObject(this);
 }
 
-Value 
-OpaqueType::nodeEval(const Node *n, Thread &thread) const
-{
-    return Value((*n->func()._PointerFunc)(*n,thread));
-}
-
 void
 OpaqueType::nodeEval(void *p, const Node *n, Thread &thread) const
 {
@@ -73,24 +68,13 @@ OpaqueType::nodeEval(void *p, const Node *n, Thread &thread) const
 }
 
 
-void 
-OpaqueType::outputValue(ostream &o, const Value &value, bool full) const
-{
-    o << "<#" << fullyQualifiedName() << " 0x"
-      << hex << value._Pointer << dec
-      << ">";
-}
-
 void
 OpaqueType::outputValueRecursive(ostream &o, 
                                  const ValuePointer vp,
                                  ValueOutputState& state) const
 {
     Pointer p = *reinterpret_cast<Pointer*>(vp);
-
-    o << "<#" << fullyQualifiedName() << " 0x"
-      << hex << p << dec
-      << ">";
+    o << "<#" << fullyQualifiedName() << " 0x" << hex << p << dec << ">";
 }
 
 //
@@ -141,7 +125,7 @@ OpaqueType::load()
 
 		   new Function(c, "=", OpaqueType::assign, AsOp,
                                 Compiled, __C_EQ__PointerAmp__PointerAmp__Pointer,
-				Return, nr, 
+				Return, n, 
 				Args, nr, n, End),
 
 		   new Function(c, "?:", OpaqueType::conditionalExpr, 
@@ -156,20 +140,32 @@ OpaqueType::load()
 
 NODE_IMPLEMENTATION(OpaqueType::dereference,Pointer)
 {
-    Pointer* ip = reinterpret_cast<Pointer*>(NODE_ARG(0,Pointer));
-    NODE_RETURN(*ip);
+    MU_NODE_DECLARE_ARG(Pointer*, p, 0);
+    MU_NODE_RETURN(*p);
 }
 
 NODE_IMPLEMENTATION(OpaqueType::conditionalExpr,Pointer)
 {
-    NODE_RETURN(NODE_ARG(0,bool) ? NODE_ARG(1,Pointer) : NODE_ARG(2,Pointer));
+    MU_NODE_DECLARE_ARG(bool, predicate, 0);
+
+    if (predicate)
+    {
+        MU_NODE_DECLARE_ARG(Pointer, p, 1);
+        MU_NODE_RETURN(p);
+    }
+    else
+    {
+        MU_NODE_DECLARE_ARG(Pointer, p, 2);
+        MU_NODE_RETURN(p);
+    }
 }
 
 NODE_IMPLEMENTATION(OpaqueType::assign, Pointer)
 {
-    Pointer* ip = reinterpret_cast<Pointer*>(NODE_ARG(0,Pointer));
-    *ip = NODE_ARG(1, Pointer);				 
-    NODE_RETURN((Pointer)ip);				
+    MU_NODE_DECLARE_ARG(Pointer*, lhs, 0);
+    MU_NODE_DECLARE_ARG(Pointer, rhs, 1);
+    *lhs = rhs;
+    MU_NODE_RETURN(rhs);
 }
 
 } // namespace Mu

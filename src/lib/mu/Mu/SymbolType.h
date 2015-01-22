@@ -66,6 +66,20 @@ class TypeSymbolType : public SymbolType
     ~TypeSymbolType();
 };
 
+class ModuleSymbolType : public SymbolType
+{
+  public:
+    ModuleSymbolType(Context*, const char*);
+    ~ModuleSymbolType();
+};
+
+class TypeModifierSymbolType : public SymbolType
+{
+  public:
+    TypeModifierSymbolType(Context*, const char*);
+    ~TypeModifierSymbolType();
+};
+
 class FunctionSymbolType : public SymbolType
 {
   public:

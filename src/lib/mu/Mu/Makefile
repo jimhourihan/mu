@@ -1,4 +1,10 @@
 #  -*- mode: makefile -*-
+# 
+#  Copyright (C) 2001  Jim Hourihan
+# 
+#  The coded instructions herein are the sole property of Jim Hourihan
+#  and may not be modified, redistributed, or used without permission.
+# 
 
 PROJECT	   = Mu
 TYPE       = LIBRARY
@@ -11,7 +17,7 @@ CXXFILES   =    HashTable           StringHashTable     Name                \
                 Context             Process             Thread              \
                 NodeAssembler       NodeVisitor         NodePrinter         \
                 BaseFunctions       ReferenceType       Module              \
-                Construct           MemberVariable      TypeModifier        \
+                MemberVariable      TypeModifier        \
                 MachineRep          MemberFunction      Class               \
                 ClassInstance       ParameterVariable   Exception           \
                 NodePatch           SymbolicConstant    Environment         \

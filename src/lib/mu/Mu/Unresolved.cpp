@@ -69,11 +69,6 @@ UnresolvedType::newObject() const
     return 0; 
 }
 
-void 
-UnresolvedType::outputValue(std::ostream& o, Value& value) const
-{
-    o << "unresolved value?";
-}
 
 Value
 UnresolvedType::nodeEval(const Node* n, Thread &t) const

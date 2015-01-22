@@ -116,6 +116,7 @@ class MuLangContext : public Context
     const Type*	    vec3fType() const { return _vec3fType; }
     const Type*	    vec2fType() const { return _vec2fType; }
 
+    const Module*   runtimeModule() const { return _runtimeModule; }
     const Module*   mathModule() const { return _mathModule; }
     const Module*   mathUtilModule() const { return _mathUtilModule; }
     virtual Object* exceptionObject(Exception&);
@@ -170,8 +171,14 @@ class MuLangContext : public Context
     Module*               _mathUtilModule;
     bool                  _typeParsingMode;
     Type*                 _parsedType;
+    Module*               _runtimeModule;
+    StringVector          _currentFile;
     DynamicArrayTypeCache _dynArrayCache;
     Fixed1DArrayTypeCache _fixed1ArrayCache;
+
+  protected:
+    bool                  _typeParsingMode;
+    Type*                 _parsedType;
 };
 
 } // namespace Mu

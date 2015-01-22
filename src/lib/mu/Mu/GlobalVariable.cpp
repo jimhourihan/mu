@@ -35,7 +35,7 @@
 //
 
 #include <Mu/Type.h>
-#include <Mu/MachineRep.h>
+#include <Mu/BaseFunctions.h>
 #include <Mu/GlobalVariable.h>
 #include <Mu/ReferenceType.h>
 #include <iostream>
@@ -61,9 +61,7 @@ GlobalVariable::~GlobalVariable() {}
 const Type*
 GlobalVariable::nodeReturnType(const Node* n) const
 {
-    const MachineRep* rep = storageClass()->machineRep();
-
-    if (n->func() == rep->referenceGlobalFunc())
+    if (n->func() == NodeFunc(BaseFunctions::referenceGlobal))
     {
 	return storageClass()->referenceType();
     }
