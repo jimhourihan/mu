@@ -15,7 +15,6 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
-#include <arg.h>
 #include <iostream>
 #include <sstream>
 #define protected public
@@ -51,6 +50,10 @@
 #include <MuQt/qtModule.h>
 #endif
 
+#include <filesystem>
+#include <boost/program_options.hpp>
+#include <boost/process.hpp>
+
 #ifndef RUSAGE_SELF
 #define RUSAGE_SELF 0
 #endif
@@ -58,16 +61,18 @@
 
 using namespace std;
 using namespace Mu;
+using namespace boost::program_options;
+using namespace boost::process;
 typedef Mu::SymbolTable::SymbolHashTable HT;
 
 #if 0
 struct rusage start_usage, end_usage, garbage_usage;
 #endif
 
-int noReadline = 1;
-int why = 0;
-int debug = 0;
-int compile = 0;
+bool noReadline = true;
+bool why = false;
+bool debug = false;
+bool compile = false;
 
 GenericMachine* machine=0;
 MuLangContext*  context=0;
@@ -133,41 +138,53 @@ main(int argc, char **argv)
     //ptw32_processInitialize();
 //#endif
 
-    char* inFile = 0;
-    char* printFunc = 0;
+    string inFile;
+    string printFunc;
     char* streamName = 0;
-    int print = 0;
-    int symbols = 0;
-    int noeval = 0;
-    int callmain = 0;
-    int noninteractive = 0;
-    int usage = 0;
-    int notruncate = 0;
-    int disableGC = 0;
+    bool print = false;
+    bool symbols = false;
+    bool noeval = false;
+    bool callmain = false;
+    bool noninteractive = false;
+    bool usage = false;
+    bool notruncate = false;
+    bool disableGC = false;
 
     GarbageCollector::init();
 
-    if (arg_parse
-	(argc, argv,
-	 "", "Usage: %s [options]", argv[0],
-	 "[%S]", &inFile, "input .mu source file",
-	 "-print", ARG_FLAG(&print), "print parse tree in lispy form",
-	 "-printFunc %S", &printFunc, "print function in lispy form",
-         "-stdin", ARG_FLAG(&noninteractive), "non interactive mode",
-         "-no-readline", ARG_FLAG(&noReadline), "don't use readline library",
-         "-why", ARG_FLAG(&why), "verbose function choice information",
-         "-debug", ARG_FLAG(&debug), "include debug information",
-	 "-symbols", ARG_FLAG(&symbols), "output root symbol table",
-         "-compile", ARG_FLAG(&compile), "compile muc files on demand",
-	 "-noeval", ARG_FLAG(&noeval), "don't evaluate",
-         "-notruncate", ARG_FLAG(&notruncate), "don't truncate long output",
-         "-no-gc", ARG_FLAG(&disableGC), "turn off garbage collector",
-         "-usage", ARG_FLAG(&usage), "show usage",
-         "-name", ARG_FLAG(&streamName), "name to use for error reporting",
-	 "-main", ARG_FLAG(&callmain), "call the main() function if it exists",
-	 NULL) < 0)
-    {
-        exit( -1 );
+    try {
+        options_description desc("Mu interpreter");
+
+        desc.add_options()
+            ("help,h",      "Print usage message")
+            ("input-file",  value<string>(&inFile),       "Input file")
+            ("print-func",  value<string>(&printFunc),    "Function to dump in lispy notation")
+            ("stdin",       bool_switch(&noninteractive), "non interactive mode")
+            ("no-readline", bool_switch(&noReadline),     "don't use readline library")
+            ("why",         bool_switch(&why),            "verbose function choice information")
+            ("debug",       bool_switch(&debug),          "include debug information")
+            ("symbols",     bool_switch(&symbols),        "output root symbol table")
+            ("compile",     bool_switch(&compile),        "compile muc files on demand")
+            ("noeval",      bool_switch(&noeval),         "don't evaluate")
+            ("notruncate",  bool_switch(&notruncate),     "don't truncate long output")
+            ("no-gc",       bool_switch(&disableGC),      "turn off garbage collector")
+            ("usage",       bool_switch(&usage),          "show usage")
+            ("main",        bool_switch(&callmain),       "call the main() function if it exists")
+        ;
+
+        positional_options_description p;
+        p.add("input-file", -1);
+        variables_map vm;        
+        store(command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
+        notify(vm);    
+
+        if (vm.count("help")) {
+            cout << "Usage: noodleip_compiler [options]\n";
+            cout << desc;
+            return 0;
+        }
+    } catch (std::exception& exc) {
+        cout << "ERROR: " << exc.what() << endl;
     }
 
     machine  = new GenericMachine();
@@ -197,12 +214,12 @@ main(int argc, char **argv)
 
     context->verbose(why ? true : false);
     context->debugging(debug ? true : false);
-    thread = process->newApplicationThread();
-    
-    if (!noninteractive && !inFile)
+    ::thread = process->newApplicationThread();
+
+    if (!noninteractive && inFile == "")
     {
         InteractiveSession session;
-        session.run(context, process, thread);
+        session.run(context, process, ::thread);
         return 0;
     }
 
@@ -210,13 +227,13 @@ main(int argc, char **argv)
 
     try
     {
-        if (!inFile)
+        if (inFile == "")
         {
             context->parseStdin(process, streamName);
         }
         else
         {
-            context->parseFile(process, inFile);
+            context->parseFile(process, inFile.c_str());
         }
     }
     catch (Exception& exc)
@@ -269,9 +286,18 @@ main(int argc, char **argv)
 
 	if (!noeval)
 	{
-	    Value v = process->evaluate(thread);
+	    Value v;
 
-            if (const Type *type = thread->returnValueType())
+            try
+            {
+                v = process->evaluate(::thread);
+            }
+            catch (std::exception& exc)
+            {
+                cerr << "EXCEPTION: " << exc.what() << endl;
+            }
+
+            if (const Type *type = ::thread->returnValueType())
             {
                 if (!type->isTypePattern())
                 {
@@ -289,9 +315,9 @@ main(int argc, char **argv)
 	}
     }
 
-    if (printFunc)
+    if (printFunc != "")
     {
-	QualifiedName n = context->internName(printFunc);
+	QualifiedName n = context->internName(printFunc.c_str());
 
         if (const Symbol *sym =
             context->globalScope()->findSymbolByQualifiedName(n, false))
@@ -345,7 +371,7 @@ main(int argc, char **argv)
 
 		Mu::Function::ArgumentVector vargs;
 		vargs.push_back(Value(array));
-		process->call(thread, f, vargs);
+		process->call(::thread, f, vargs);
 	    }
 	}
     }

@@ -1,8 +1,0 @@
-OPTFLAGS := $(DEBUGFLAGS)
-BOOST_LIB_PATTERN := boost_%-vc100-mt-gd-1_53
-#
-#  The following flags are recommended by Purify
-#  -INCREMENTAL:NO -FIXED:NO
-#
-LDFLAGS += -DEBUG -INCREMENTAL:NO -FIXED:NO
-

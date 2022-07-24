@@ -1,7 +1,0 @@
-#
-# Ignore address problems in garbage collector functions.
-#
-# Used in clang command line: -fsanitize-blacklist=$(SRC_ROOT)/build/sanitize--blacklist.txt
-#
-
-fun:*GC_*

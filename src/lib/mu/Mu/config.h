@@ -148,7 +148,7 @@
 //#define GC_PTHREADS 1
 #define GC_THREADS 1
 #include <gc/gc.h>
-#include <gc/gc_allocator.h>
+#include <Mu/gc_allocator.h>
 #endif
 
 

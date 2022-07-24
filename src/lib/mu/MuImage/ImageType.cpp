@@ -116,9 +116,9 @@ readTIFF(ImageType::ImageStruct* im, const Mu::String& imgFileName, Thread& thre
         throw ProgramException(e);
     }
     
-    uint16 *sampleinfo;
-    uint16 extrasamples;
-    uint16 bps;
+    uint16_t *sampleinfo;
+    uint16_t extrasamples;
+    uint16_t bps;
 
     int width, height;
 

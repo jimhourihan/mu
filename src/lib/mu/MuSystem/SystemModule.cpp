@@ -1594,7 +1594,7 @@ NODE_IMPLEMENTATION(SystemModule::system2, Pointer)
     NODE_RETURN(o);
 #else
     FILE *fd = ::popen(path->c_str(), "r");
-    if (fd < 0) ThrowErrno(NODE_THREAD, 0);
+    if (fd == nullptr) ThrowErrno(NODE_THREAD, 0);
 
     Process *p = NODE_THREAD.process();
 

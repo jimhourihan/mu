@@ -2132,7 +2132,7 @@ Reader::readPartialSymbolicConstantDeclaration(istream& in)
         }
         else
         {
-            Value v((Pointer)readObjectId(in));
+            Value v(reinterpret_cast<Pointer>(readObjectId(in)));
             c = new SymbolicConstant(_context, name.c_str(), t, v);
         }
         
@@ -2258,7 +2258,7 @@ Reader::readPartialFunctionDeclaration(istream& in, bool member)
             }
             else
             {
-                Value v((Pointer)readObjectId(in));
+                Value v(reinterpret_cast<Pointer>(readObjectId(in)));
                 pv = new ParameterVariable(_context, pname.c_str(), t, Value(Pointer(0)));
                 _defaultValueParams.push_back(DefaultValuePair(pv, v));
             }

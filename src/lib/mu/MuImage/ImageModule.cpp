@@ -44,7 +44,7 @@
 #include <Mu/ParameterVariable.h>
 #include <MuLang/StringType.h>
 #include <MuLang/MuLangContext.h>
-#include <cv.h>
+//#include <cv.h>
 #include <sstream>
 #include <stdlib.h>
 
@@ -100,6 +100,7 @@ static NODE_IMPLEMENTATION(resize, Pointer)
     ImageStruct*   inIm    = inObj->data<ImageStruct>();
     ImageStruct*   outIm   = outObj->data<ImageStruct>();
 
+#if 0
     CvMat inMat;
     CvMat outMat;
 
@@ -118,6 +119,7 @@ static NODE_IMPLEMENTATION(resize, Pointer)
                     0);
 
     cvResize(&inMat, &outMat, CV_INTER_AREA);
+#endif
 
     NODE_RETURN(outObj);
 }

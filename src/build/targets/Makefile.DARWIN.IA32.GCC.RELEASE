@@ -1,6 +1,0 @@
-
-#
-#   Force (override) the OPTFLAGS using :=
-#
-
-OPTFLAGS := $(OPTFLAGS_IA32)

@@ -39,8 +39,8 @@
 #include <Mu/PrimitiveObject.h>
 #include <Mu/PrimitiveType.h>
 #include <iosfwd>
-#include <half.h>
-#include <halfLimits.h>
+#include <Imath/half.h>
+#include <Imath/halfLimits.h>
 
 namespace Mu {
 

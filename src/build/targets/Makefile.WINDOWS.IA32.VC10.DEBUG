@@ -1,4 +1,0 @@
-
-OPTFLAGS := $(DEBUGFLAGS)
-LDFLAGS += -DEBUG
-BOOST_LIB_PATTERN := boost_%-vc100-mt-gd-1_49

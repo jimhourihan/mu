@@ -1,4 +1,0 @@
-
-OPTFLAGS = $(DEBUGFLAGS)
-# use the default
-

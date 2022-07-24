@@ -1,0 +1,13 @@
+[pbj]
+MACOS_SDK = 10.15
+CXX_VERSION = c++17
+CXX_LIBRARY = libc++
+BUILD_ROOT = /Users/jimh/build/mu/debug
+
+[tree]
+name = Me
+project_library_spath = src/lib/*
+project_binary_spath = src/bin/*
+project_component_spath = src/components
+description = Some Great Project
+organization = Unorganized Inc

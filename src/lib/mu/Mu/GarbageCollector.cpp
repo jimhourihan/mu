@@ -391,7 +391,8 @@ GarbageCollector::init()
         //
 
         if (getenv("MU_GC_INCREMENTAL")) GC_enable_incremental();
-        GC_all_interior_pointers = 1;
+        //GC_all_interior_pointers = 1;
+        GC_set_all_interior_pointers(1);
         GC_init();
         if (!_api) pushMainHeapAPI();
 

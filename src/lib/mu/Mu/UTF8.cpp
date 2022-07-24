@@ -34,8 +34,8 @@
 //  DAMAGE.
 //
 
-#include <Mu/utf8_v2/checked.h>
-#include <Mu/utf8_v2/unchecked.h>
+#include <utf8cpp/utf8/checked.h>
+#include <utf8cpp/utf8/unchecked.h>
 #include <Mu/UTF8.h>
 
 namespace Mu {

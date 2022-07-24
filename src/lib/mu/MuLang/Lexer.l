@@ -46,10 +46,6 @@
 #include <Mu/utf8_v2/checked.h>
 using namespace std;
 
-#if MU_FLEX_MINOR_VERSION >= 33
-#define YY_NO_UNISTD_H
-#endif
-
 #define yydebug MUYYdebug
 extern int	yydebug;
 #define LVAL reinterpret_cast<YYSTYPE*>(_yystype)
@@ -628,11 +624,7 @@ yyFlexLexer::yyIdentifier(const char *text)
 void 
 yyFlexLexer::yyNewString()
 {
-#if COMPILER == GCC2_96
-    stringBuffer = "";
-#else
     stringBuffer.clear();
-#endif
 }
 
 void 
