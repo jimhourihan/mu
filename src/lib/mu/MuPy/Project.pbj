@@ -1,0 +1,10 @@
+
+PROJECT		= MuPy
+TYPE		= LIBRARY
+
+USES            = python
+
+CXXFILES	= PyObjectType PyTypeObjectType PyModule
+LIBS            = MuLang Mu GL gc Half atomic
+
+

@@ -65,6 +65,11 @@
 #define DARWIN_THREAD_STATE_COUNT i386_THREAD_STATE_COUNT
 #define DARWIN_THREAD_STATE i386_THREAD_STATE
 #endif
+#if defined(ARCH_ARM64)
+#define darwin_thread_state arm_thread_state
+#define DARWIN_THREAD_STATE_COUNT ARM_THREAD_STATE_COUNT
+#define DARWIN_THREAD_STATE ARM_THREAD_STATE
+#endif
 #endif
 
 #ifdef PLATFORM_LINUX

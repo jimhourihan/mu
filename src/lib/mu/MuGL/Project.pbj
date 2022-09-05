@@ -1,0 +1,8 @@
+PROJECT		= "MuGL"
+TYPE		= Types.LIBRARY
+
+CXX_FILES	= ["GLModule.cpp"]
+LIBS            = ["MuLang"]
+
+#LIBS_WINDOWS    =  glew
+
