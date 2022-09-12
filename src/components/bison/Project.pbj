@@ -1,0 +1,17 @@
+PROJECT      = "bison"
+TYPE         = Types.TOOLSET_COMPONENT
+BUILD_SYSTEM = BuildTypes.AUTOCONF
+TOOL_NAMES   = "BISON"
+TOOL_MODULES = f"{PROJECT_DIR}/pbj_tool_BISON.py"
+VERSION      = "3.8"
+LICENSE      = "GPL"
+AUTHORS      = "GNU"
+ARCHIVE      = f"bison-{VERSION}.tar.gz"
+URL          = f"https://ftp.gnu.org/gnu/bison/{ARCHIVE}"
+ORIGIN_TREE  = "pbj"
+TARGET       = f"{BUILD_ROOT}/bin/bison"
+PRODUCTS     = [f"{BUILD_ROOT}/bin/yacc",
+                f"{BUILD_ROOT}/lib/liby.a",
+                f"{BUILD_ROOT}/share/info/bison.info",
+                f"{BUILD_ROOT}/share/bison"]
+

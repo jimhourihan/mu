@@ -1,0 +1,23 @@
+PROJECT      = "png"
+TYPE         = Types.COMPONENT_LIBRARIES
+BUILD_SYSTEM = BuildTypes.AUTOCONF
+VERSION      = "1.6.37"
+LICENSE      = "ZLIB"
+AUTHORS      = "Many"
+ARCHIVE      = f"libpng-{VERSION}.tar.xz"
+URL          = "https://sourceforge.net/projects/libpng/files/latest/download"
+ORIGIN_TREE  = "pbj"
+USES         = ["z"]
+EXPORT_LIBS  = ["png"]
+TARGET       = [f"{BUILD_ROOT}/lib/libpng.a",
+                f"{BUILD_ROOT}/lib/libpng.la",
+                f"{BUILD_ROOT}/lib/libpng16.a",
+                f"{BUILD_ROOT}/lib/libpng16.la",
+                f"{BUILD_ROOT}/lib/libpng16.dylib",
+                f"{BUILD_ROOT}/lib/libpng16.16.dylib",
+                f"{BUILD_ROOT}/lib/libpng.dylib",
+                f"{BUILD_ROOT}/include/png.h",
+                f"{BUILD_ROOT}/include/pngconf.h",
+                f"{BUILD_ROOT}/include/pnglibconf.h",
+                f"{BUILD_ROOT}/include/libpng16"]
+

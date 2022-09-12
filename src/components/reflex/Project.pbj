@@ -1,0 +1,21 @@
+PROJECT      = "reflex"
+TYPE         = Types.TOOLSET_COMPONENT
+BUILD_SYSTEM = BuildTypes.AUTOCONF
+TOOL_NAME    = 'REFLEX'
+VERSION      = "3.2.3"
+LICENSE      = "BSD"
+AUTHORS      = "Robert van Engelen"
+ARCHIVE      = f"RE-flex-{VERSION}.tar.gz"
+URL          = f"https://github.com/Genivia/RE-flex/archive/refs/tags/v{VERSION}.tar.gz"
+GIT_COMMIT   = "v" + VERSION
+ORIGIN_TREE  = "pbj"
+EXPORT_LIBS  = ["reflex"]
+#USES         = ["boost"]
+TARGET       = f"{BUILD_ROOT}/bin/reflex"
+TOOL_MODULES = f"{PROJECT_DIR}/pbj_tool_REFLEX.py"
+TOOL_NAMES   = "REFLEX"
+PRODUCTS     = [f"{BUILD_ROOT}/lib/libreflex.a",
+                f"{BUILD_ROOT}/share/man/man1/reflex.1",
+                f"{BUILD_ROOT}/include/reflex"]
+
+USE_LINK_FLAGS = ["-lreflex"]

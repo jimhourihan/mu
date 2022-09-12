@@ -126,9 +126,6 @@ Module::loadDSO(const String& soName,
     if (dsoInterface._handle = dlopen(soName.c_str(), RTLD_NOW|RTLD_GLOBAL))
     {
         if (void *sym = dlsym(dsoInterface._handle, initName.c_str()))
-#if 0
-            }
-#endif
 #else
     UTF16String uSoName = UTF16convert(soName);
     //UTF16String uInitName = UTF16convert(initName);

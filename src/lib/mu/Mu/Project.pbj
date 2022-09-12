@@ -27,7 +27,7 @@ CXX_FILES = ["HashTable.cpp", "StringHashTable.cpp", "Name.cpp",
 CXX_FLAGS = "-DARCH_ARM64"
 
 LIBS = ["Imath", "stl_ext", "gc"]
-USES = ["boehm_gc", "utfcpp"]
+USES = ["boehm_gc", "utfcpp", "imath"]
 
 # GC_malloc_stubborn and GC_change_stubborn are deprecated
 # but not sure how to replace them yet.

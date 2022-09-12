@@ -1,8 +1,9 @@
-PROJECT		= "encoding"
-TYPE		= Types.PLUGIN
-PLUGIN_DIR	= "Mu"
-PLUGIN_SUFFIX	= ".so"
-CXX_FILES	= ["init.cpp"]
-LIBS            = ["MuEncoding"]
+PROJECT	      = "encoding"
+TYPE	      = Types.PLUGIN
+PLUGIN_DIR    = "Mu"
+PLUGIN_SUFFIX = ".so"
+CXX_FILES     = ["init.cpp"]
+LIBS          = ["MuEncoding"]
+NO_LINK_LIBS  = ["Mu", "MuLang"]
 
-USE_RUN_ENV = [('MU_MODULE_PATH', '$BUILD_ROOT/Plugins/Mu')]
+USE_RUN_ENV = [('MU_MODULE_PATH', f'{BUILD_ROOT}/Plugins/Mu')]

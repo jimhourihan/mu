@@ -1,27 +1,14 @@
 [pbj]
-BUILD_ROOT = /Users/jimh/build/mu/debug
 CXX_VERSION = c++17
 CXX_LIBRARY = libc++
 MACOS_VERSION = 12.3
-MACOS_MIN_VERSION = 12.3
+MACOS_MIN_VERSION = 12.0
 
 [tree]
-name = Mu
+name = mu
 project_library_spath = src/lib/*
 project_binary_spath = src/bin/*
-project_component_spath = ../pox/src/components
-description = Mu
+project_component_spath = src/components
+description = Mu Extension Language
 organization = Extraspecial Group
-
-[BUILD_TYPE=="RELEASE"]
-CXX_FLAGS = -DARCH_$ARCH -DPLATFORM_$PLATFORM 
-C_FLAGS = -DARCH_$ARCH -DPLATFORM_$PLATFORM 
-
-[BUILD_TYPE=="DEBUG"]
-CXX_FLAGS = -DARCH_$ARCH -DPLATFORM_$PLATFORM
-C_FLAGS = -DARCH_$ARCH -DPLATFORM_$PLATFORM
-
-[BUILD_TYPE=="DEBUG" and TOOLSET=="XCODE"]
-override CXX_FLAGS = -DCOMPILER_CLANG
-override C_FLAGS = -DCOMPILER_CLANG
 

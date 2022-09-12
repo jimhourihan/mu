@@ -1,0 +1,15 @@
+# release pbj build type
+
+defines = ""
+# pass these through to the compilers
+for v in ["PLATFORM", "ARCH", "TOOLSET", "COMPILER"]:
+    l = locals().get(v, None)
+    if l:
+        defines += f" -D{v}_{l}"
+
+OPT_FLAGS    = "-O3"
+base_flags   = f"{OPT_FLAGS} {defines}"
+CXX_FLAGS    = f"{base_flags} {CXX_FLAGS}"
+C_FLAGS      = f"{base_flags} {C_FLAGS}"
+OBJC_FLAGS   = f"{base_flags} {OBJC_FLAGS}"
+OBJCXX_FLAGS = f"{base_flags} {OBJCXX_FLAGS}"

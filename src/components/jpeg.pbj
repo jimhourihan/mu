@@ -1,0 +1,18 @@
+PROJECT      = "jpeg"
+TYPE         = Types.COMPONENT_LIBRARIES
+BUILD_SYSTEM = BuildTypes.AUTOCONF
+VERSION      = "9e"
+LICENSE      = "BSD-like"
+AUTHORS      = "Independent JPEG Group"
+ARCHIVE      = "jpegsrc.v{0}.tar.gz".format(VERSION)
+URL          = f"https://www.ijg.org/files/{ARCHIVE}"
+ORIGIN_TREE  = "pbj"
+EXPORT_LIBS  = ["jpeg"]
+TARGET       = [f"{BUILD_ROOT}/lib/libjpeg.{0}.dylib".format(VERSION.split('.')[0][0]),
+                f"{BUILD_ROOT}/lib/libjpeg.dylib",
+                f"{BUILD_ROOT}/lib/libjpeg.a",
+                f"{BUILD_ROOT}/lib/libjpeg.la",
+                f"{BUILD_ROOT}/include/jconfig.h",
+                f"{BUILD_ROOT}/include/jerror.h",
+                f"{BUILD_ROOT}/include/jmorecfg.h",
+                f"{BUILD_ROOT}/include/jpeglib.h"]

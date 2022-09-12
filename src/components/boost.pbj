@@ -1,0 +1,64 @@
+PROJECT      = Modules.boost # this is the name "boost" 
+TYPE         = Types.COMPONENT_LIBRARIES
+BUILD_SYSTEM = BuildTypes.BOOST
+VARIABLES    = ["CXX_VERSION", "CXX_LIBRARY"] # e.g. "c++17" and "libc++"
+VERSION      = "1.76.0" ## VFXPLATFORM 2022, NOTE: 1.78 has a stupid bug so avoid it
+ARCHIVE      = "boost_{0}.tar.gz".format(VERSION.replace('.', '_'))
+URL          = f"https://cytranet.dl.sourceforge.net/project/boost/boost/{VERSION}/{ARCHIVE}"
+USES         = ["z"]
+ORIGIN_TREE  = "pbj"
+
+# > pbj --internal list-boost-targets
+# will produce these two lists
+
+a = ['stacktrace_basic', 'math_tr1', 'container', 'context', 'math_c99f',
+     'iostreams', 'thread', 'program_options', 'coroutine', 'timer', 'contract',
+     'type_erasure', 'log_setup', 'atomic', 'random', 'date_time',
+     'test_exec_monitor', 'stacktrace_noop', 'system', 'exception', 'math_c99',
+     'prg_exec_monitor', 'math_tr1f', 'wave', 'log', 'graph', 'regex',
+     'wserialization', 'unit_test_framework', 'filesystem', 'chrono',
+     'serialization']
+
+so = ['wave', 'thread', 'math_c99f', 'iostreams', 'wserialization',
+      'contract', 'prg_exec_monitor', 'graph', 'container', 'random',
+      'math_tr1f', 'stacktrace_basic', 'regex', 'program_options',
+      'type_erasure', 'log_setup', 'serialization', 'unit_test_framework',
+      'timer', 'filesystem', 'stacktrace_noop', 'log', 'math_tr1', 'atomic',
+      'date_time', 'system', 'math_c99', 'chrono', 'context']
+
+c = ["fiber", "fiber_numa", "graph_parallel", "headers", "locale", #"math",
+     "math_c99l", "math_tr1l", "mpi", "stacktrace_addr2line",
+     "stacktrace_backtrace", "stacktrace_windbg", "stacktrace_windbg_cached"]
+
+EXPORT_LIBS = list(map(lambda x: f"boost_{x}", so))
+
+br = BUILD_ROOT
+
+a_targets       = list(map(lambda x, b=BUILD_ROOT: f"{b}/lib/libboost_{x}.a", a))
+dylib_targets   = list(map(lambda x, b=BUILD_ROOT: f"{b}/lib/libboost_{x}.dylib", so))
+cmake_targets   = list(map(lambda x, v=VERSION, b=BUILD_ROOT: f"{b}/lib/cmake/boost_{x}-{v}", a + so + c))
+cmake_targets  += [f"{BUILD_ROOT}/lib/cmake/Boost-{VERSION}",
+                  f"{BUILD_ROOT}/lib/cmake/BoostDetectToolset-{VERSION}.cmake"]
+PRODUCTS        = a_targets + dylib_targets + cmake_targets
+TARGET          = [f"{BUILD_ROOT}/include/boost"]
+
+#
+#   Boost specific stuff
+#
+
+BOOST_B2_CXXFLAGS                 = ["-DBOOST_COROUTINES_NO_DEPRECATION_WARNING=1"]
+BOOST_BOOTSTRAP_WITHOUT_LIBRARIES = ["python"]
+
+
+if platform() == "DARWIN":
+        BOOST_TOOLSET            = "clang"
+        BOOST_BOOTSTRAP_CXXFLAGS = [f"-std={CXX_VERSION}", f"-stdlib={CXX_LIBRARY}"]
+        BOOST_B2_CXXFLAGS       += [f"-std={CXX_VERSION}", f"-stdlib={CXX_LIBRARY}"]
+        BOOST_B2_LINKFLAGS       = [f"-stdlib={CXX_LIBRARY}"]
+
+elif platform() == "LINUX":
+        BOOST_TOOLSET            = "gcc"
+        BOOST_BOOTSTRAP_CXXFLAGS = []
+        BOOST_B2_LINKFLAGS       = []
+
+USE_LINK_FLAGS = [f"-rpath {BUILD_ROOT}/lib"]

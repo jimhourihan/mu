@@ -46,7 +46,7 @@
 #include <MuLang/DynamicArray.h>
 #include <MuLang/FixedArray.h>
 #include <algorithm>
-#include <Eigen/Eigen>
+#include <eigen3/Eigen/Eigen>
 
 namespace Mu {
 using namespace std;
