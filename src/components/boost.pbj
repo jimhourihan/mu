@@ -61,4 +61,5 @@ elif platform() == "LINUX":
         BOOST_BOOTSTRAP_CXXFLAGS = []
         BOOST_B2_LINKFLAGS       = []
 
-USE_LINK_FLAGS = [f"-rpath {BUILD_ROOT}/lib"]
+if PLATFORM == 'DARWIN':
+        USE_LINK_FLAGS = [f"-rpath {BUILD_ROOT}/lib"]

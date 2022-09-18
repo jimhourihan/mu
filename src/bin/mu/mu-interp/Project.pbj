@@ -6,11 +6,15 @@ CXX_FILES = ["main.cpp"]
 
 USES = ["boost"]
 
-LIBS = [ "MuLang", "Mu", "Imath", "stl_ext", "boost_program_options",
-         "gc", "readline", "mx", "dl", "pthread"]
+if PLATFORM == 'DARWIN':
+    FRAMEWORKS = ["System"]
+    LIBS = [ "MuLang", "Mu", "Imath", "stl_ext", "boost_program_options",
+             "gc", "readline", "mx", "dl", "pthread"]
+else:
+    LIBS = [ "MuLang", "Mu", "Imath", "stl_ext", "boost_program_options",
+             "gc", "readline", "dl", "pthread"]
 
 MODULES = ["image", "system", "io", "encoding", "autodoc", "math_linear"]
 
-FRAMEWORKS = ["System"]
 
 

@@ -107,7 +107,7 @@ Thread::Thread(Process* p, bool appthread) :
 #endif
 
 #ifdef PLATFORM_LINUX
-    _threadState = (size_t*)(new ucontext);
+    _threadState = (size_t*)(new ucontext_t);
 #endif
 
     if (isApplicationThread())
@@ -523,7 +523,7 @@ Thread::threadStateSize()
 #endif
 
 #ifdef PLATFORM_LINUX
-    return sizeof(ucontext);
+    return sizeof(ucontext_t);
 #endif
 
 #endif

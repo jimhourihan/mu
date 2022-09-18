@@ -9,7 +9,23 @@ for v in ["PLATFORM", "ARCH", "TOOLSET", "COMPILER"]:
 
 OPT_FLAGS    = "-g"
 base_flags   = f"{OPT_FLAGS} {defines}"
+
+if TOOLSET == 'GCC' and ARCH.startswith('ARM'):
+    # this removes an annoying warning that nothing can be done about
+    # GCC 7.1 fixed some ABI issues on ARM that cause warnings to be
+    # generated on standard library c++ header files
+    #
+    # From stackoverflow: ... there was a subtle ABI change (actually
+    # a conformance fix) between 6 and 7.1, such that libraries built
+    # with 6.x or earlier may not work properly when called from code
+    # built with 7.x (and vice-versa). As long as all your C++ code is
+    # built with GCC 7.1 or later, you can safely ignore this
+    # warning. To disable it, pass -Wno-psabi to the compiler.
+    base_flags += " -Wno-psabi"
+
 CXX_FLAGS    = f"{base_flags} {CXX_FLAGS}"
 C_FLAGS      = f"{base_flags} {C_FLAGS}"
-OBJC_FLAGS   = f"{base_flags} {OBJC_FLAGS}"
-OBJCXX_FLAGS = f"{base_flags} {OBJCXX_FLAGS}"
+
+if PLATFORM == 'DARWIN':
+    OBJC_FLAGS   = f"{base_flags} {OBJC_FLAGS}"
+    OBJCXX_FLAGS = f"{base_flags} {OBJCXX_FLAGS}"
