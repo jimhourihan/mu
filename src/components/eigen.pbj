@@ -1,5 +1,5 @@
 PROJECT      = "eigen"
-TYPE         = Types.COMPONENT_LIBRARIES
+TYPE         = ProjectTypes.COMPONENT_LIBRARIES
 BUILD_SYSTEM = BuildTypes.CMAKE
 VERSION      = "3.4.0"
 LICENSE      = "MPL2"

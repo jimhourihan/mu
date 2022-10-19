@@ -1,5 +1,5 @@
 PROJECT      = "bison"
-TYPE         = Types.TOOLSET_COMPONENT
+TYPE         = ProjectTypes.TOOLSET_COMPONENT
 BUILD_SYSTEM = BuildTypes.AUTOCONF
 TOOL_NAMES   = "BISON"
 TOOL_MODULES = f"{PROJECT_DIR}/pbj_tool_BISON.py"

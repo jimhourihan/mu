@@ -1,5 +1,5 @@
 PROJECT	   = "Mu"
-TYPE       = Types.LIBRARY
+TYPE       = ProjectTypes.LIBRARY
 
 CXX_FILES = ["HashTable.cpp", "StringHashTable.cpp", "Name.cpp",
              "Symbol.cpp", "SymbolTable.cpp", "Namespace.cpp", "Node.cpp",

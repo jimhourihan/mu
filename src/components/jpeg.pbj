@@ -1,5 +1,5 @@
 PROJECT      = "jpeg"
-TYPE         = Types.COMPONENT_LIBRARIES
+TYPE         = ProjectTypes.COMPONENT_LIBRARIES
 BUILD_SYSTEM = BuildTypes.AUTOCONF
 VERSION      = "9e"
 LICENSE      = "BSD-like"

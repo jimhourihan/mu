@@ -1,5 +1,5 @@
 PROJECT      = "png"
-TYPE         = Types.COMPONENT_LIBRARIES
+TYPE         = ProjectTypes.COMPONENT_LIBRARIES
 BUILD_SYSTEM = BuildTypes.AUTOCONF
 VERSION      = "1.6.37"
 LICENSE      = "ZLIB"

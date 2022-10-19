@@ -1,5 +1,5 @@
 PROJECT      = "imath"
-TYPE         = Types.COMPONENT_LIBRARIES
+TYPE         = ProjectTypes.COMPONENT_LIBRARIES
 BUILD_SYSTEM = BuildTypes.CMAKE
 VERSION      = "3.1.4"
 libnums      = [3, 1, 29, 3, 0]

@@ -1,5 +1,5 @@
 PROJECT      = "boehm_gc"
-TYPE         = Types.COMPONENT_LIBRARIES
+TYPE         = ProjectTypes.COMPONENT_LIBRARIES
 BUILD_SYSTEM = BuildTypes.CMAKE
 VERSION      = "8.2.0"
 LICENSE      = "MIT?"

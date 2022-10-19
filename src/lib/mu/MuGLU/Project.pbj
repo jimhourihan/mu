@@ -1,5 +1,5 @@
 PROJECT		= "MuGLU"
-TYPE		= Types.LIBRARY
+TYPE		= ProjectTypes.LIBRARY
 
 CXX_FILES	= ["GLUModule.cpp"]
 LIBS            = ["MuLang"]

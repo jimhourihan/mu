@@ -1,5 +1,5 @@
-PROJECT      = Modules.boost # this is the name "boost" 
-TYPE         = Types.COMPONENT_LIBRARIES
+PROJECT      = "boost"
+TYPE         = ProjectTypes.COMPONENT_LIBRARIES
 BUILD_SYSTEM = BuildTypes.BOOST
 VARIABLES    = ["CXX_VERSION", "CXX_LIBRARY"] # e.g. "c++17" and "libc++"
 VERSION      = "1.76.0" ## VFXPLATFORM 2022, NOTE: 1.78 has a stupid bug so avoid it

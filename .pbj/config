@@ -3,6 +3,7 @@ CXX_VERSION = c++17
 CXX_LIBRARY = libc++
 MACOS_VERSION = 12.3
 MACOS_MIN_VERSION = 12.0
+BUILD_TYPE = debug
 
 [tree]
 name = mu

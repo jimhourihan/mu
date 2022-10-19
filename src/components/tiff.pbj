@@ -1,5 +1,5 @@
 PROJECT           = "tiff"
-TYPE              = Types.COMPONENT_LIBRARIES
+TYPE              = ProjectTypes.COMPONENT_LIBRARIES
 BUILD_SYSTEM      = BuildTypes.CMAKE # it has autoconf but fails with recent clang
 VERSION           = "4.3.0"
 LICENSE           = "BSD-like"

@@ -1,5 +1,5 @@
 PROJECT = "MuLang"
-TYPE    = Types.LIBRARY
+TYPE    = ProjectTypes.LIBRARY
 LIBS    = ["Mu", "Imath", "stl_ext", "gc"]
 USES    = ["reflex", "bison", "boehm_gc", "utfcpp", "imath"]
 

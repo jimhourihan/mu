@@ -1,5 +1,5 @@
 PROJECT      = "atomic_ops"
-TYPE         = Types.COMPONENT_LIBRARIES
+TYPE         = ProjectTypes.COMPONENT_LIBRARIES
 BUILD_SYSTEM = BuildTypes.AUTOCONF
 VERSION      = "7.6.12"
 LICENSE      = "MIT?"

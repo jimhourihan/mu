@@ -1,5 +1,5 @@
 PROJECT      = "z"
-TYPE         = Types.COMPONENT_LIBRARIES
+TYPE         = ProjectTypes.COMPONENT_LIBRARIES
 BUILD_SYSTEM = BuildTypes.AUTOCONF
 VERSION      = "1.2.12"
 LICENSE      = "ZLIB"
